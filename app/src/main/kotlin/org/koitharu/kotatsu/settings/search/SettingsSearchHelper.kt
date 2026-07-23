@@ -16,13 +16,11 @@ import org.koitharu.kotatsu.settings.ServicesSettingsFragment
 import org.koitharu.kotatsu.settings.StorageAndNetworkSettingsFragment
 import org.koitharu.kotatsu.settings.SuggestionsSettingsFragment
 import org.koitharu.kotatsu.settings.NotificationSettingsLegacyFragment
-import org.koitharu.kotatsu.settings.about.AboutSettingsFragment
 import org.koitharu.kotatsu.settings.appearance.PreviewSettingsFragment
 import org.koitharu.kotatsu.settings.discord.DiscordSettingsFragment
 import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
 import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
 import org.koitharu.kotatsu.settings.userdata.storage.DataCleanupSettingsFragment
-import org.koitharu.kotatsu.sync.ui.SyncSettingsFragment
 import javax.inject.Inject
 
 @Reusable
@@ -112,26 +110,8 @@ class SettingsSearchHelper @Inject constructor(
 			}
 		}
 
-		section(R.string.google_drive_sync, SyncSettingsFragment::class.java) { sectionCrumbs ->
-			group(sectionCrumbs, ctx.getString(R.string.sync_account)) { crumbs ->
-				addItem("sync_sign_in", R.string.sync_sign_in, R.string.sync_sign_in_summary, crumbs, SyncSettingsFragment::class.java)
-				addItem("sync_sign_out", R.string.sync_sign_out, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java)
-				addItem("sync_account", R.string.sync_account, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java, keywordRes = intArrayOf(R.string.sync_hide_email, R.string.sync_show_email))
-			}
-			group(sectionCrumbs, ctx.getString(R.string.options)) { crumbs ->
-				addItem("sync_now", R.string.sync_now, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java, keywordRes = intArrayOf(R.string.sync_never, R.string.sync_syncing), keywordText = listOf("last synced"))
-				addItem("sync_frequency", R.string.sync_frequency, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java, keywordRes = intArrayOf(R.string.sync_freq_off, R.string.sync_freq_6h, R.string.sync_freq_12h, R.string.sync_freq_daily, R.string.sync_freq_weekly))
-				addItem("sync_wifi_only", R.string.sync_wifi_only, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java)
-				addItem("sync_on_start", R.string.sync_on_start, R.string.sync_on_start_summary, crumbs, SyncSettingsFragment::class.java)
-				addItem("sync_what", R.string.sync_what, breadcrumbs = crumbs, fragmentClass = SyncSettingsFragment::class.java, keywordRes = intArrayOf(R.string.sync_content_favourites, R.string.sync_content_history, R.string.sync_content_bookmarks, R.string.sync_content_feed, R.string.sync_content_tracking, R.string.sync_content_stats, R.string.sync_content_settings, R.string.sync_content_covers))
-				addItem("sync_delete_data", R.string.sync_delete_data, R.string.sync_delete_data_summary, crumbs, SyncSettingsFragment::class.java)
-			}
-		}
-
 		section(R.string.extensions, ExtensionsSettingsFragment::class.java) { sectionCrumbs ->
 			group(sectionCrumbs, ctx.getString(R.string.auto_update)) { crumbs ->
-				addItem(AppSettings.KEY_SHIZUKU_INSTALLER, R.string.shizuku_title, R.string.shizuku_summary, crumbs, ExtensionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_AUTO_UPDATE_EXTENSIONS, R.string.ext_auto_update_title, R.string.ext_auto_update_summary, crumbs, ExtensionsSettingsFragment::class.java)
 				addItem(AppSettings.KEY_EXTENSION_UPDATE_NOTIFICATIONS, R.string.ext_update_notifications_title, R.string.ext_update_notifications_summary, crumbs, ExtensionsSettingsFragment::class.java)
 			}
 			group(sectionCrumbs, "Catalog") { crumbs ->
@@ -301,18 +281,6 @@ class SettingsSearchHelper @Inject constructor(
 				addItem("discord_rpc", R.string.discord_rpc, R.string.discord_rpc_summary, crumbs, DiscordSettingsFragment::class.java)
 				addItem("discord_token", R.string.discord_token, breadcrumbs = crumbs + ctx.getString(R.string.discord), fragmentClass = DiscordSettingsFragment::class.java, keywordText = listOf("token", "sign in", "browser"))
 				addItem("discord_skip_nsfw", R.string.disable_nsfw, R.string.rpc_skip_nsfw_summary, crumbs + ctx.getString(R.string.discord), DiscordSettingsFragment::class.java)
-			}
-		}
-
-		section(R.string.about, AboutSettingsFragment::class.java) { sectionCrumbs ->
-			group(sectionCrumbs, "Updates") { crumbs ->
-				addItem("app_version", R.string.check_for_updates, breadcrumbs = crumbs, fragmentClass = AboutSettingsFragment::class.java)
-				addItem("changelog", R.string.changelog, R.string.changelog_summary, crumbs, AboutSettingsFragment::class.java)
-			}
-			group(sectionCrumbs, "Links") { crumbs ->
-				addItem("about_help", R.string.user_manual, R.string.url_user_manual, crumbs, AboutSettingsFragment::class.java)
-				addItem("about_github", R.string.source_code, R.string.url_github, crumbs, AboutSettingsFragment::class.java)
-				addItem("about_discord", R.string.discord, R.string.url_discord_web, crumbs, AboutSettingsFragment::class.java)
 			}
 		}
 

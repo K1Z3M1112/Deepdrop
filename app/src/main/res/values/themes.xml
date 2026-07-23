@@ -123,9 +123,9 @@
 		<item name="materialSearchViewToolbarHeight">@dimen/search_bar_min_height</item>
 
 		<!-- Material 3 Expressive component styles (applied to every color scheme) -->
-		<item name="floatingActionButtonStyle">@style/Widget.Material3Expressive.FloatingActionButton</item>
-		<item name="floatingActionButtonMediumStyle">@style/Widget.Material3Expressive.FloatingActionButton.Medium</item>
-		<item name="floatingActionButtonLargeStyle">@style/Widget.Material3Expressive.FloatingActionButton.Large</item>
+		<item name="floatingActionButtonStyle">@style/Widget.Kotatsu.FloatingActionButton</item>
+		<item name="floatingActionButtonMediumStyle">@style/Widget.Kotatsu.FloatingActionButton.Medium</item>
+		<item name="floatingActionButtonLargeStyle">@style/Widget.Kotatsu.FloatingActionButton.Large</item>
 
 		<item name="extendedFloatingActionButtonSmallStyle">@style/Widget.Material3Expressive.ExtendedFloatingActionButton.Small</item>
 		<item name="extendedFloatingActionButtonMediumStyle">@style/Widget.Material3Expressive.ExtendedFloatingActionButton.Medium</item>
@@ -134,7 +134,7 @@
 		<item name="materialButtonStyle">@style/Widget.Material3Expressive.Button</item>
 		<item name="materialButtonTonalStyle">@style/Widget.Material3Expressive.Button.TonalButton</item>
 		<item name="materialButtonOutlinedStyle">@style/Widget.Material3Expressive.Button.OutlinedButton</item>
-		<item name="materialButtonElevatedStyle">@style/Widget.Material3Expressive.Button.ElevatedButton</item>
+		<item name="materialButtonElevatedStyle">@style/Widget.Kotatsu.Button.Elevated</item>
 		<item name="borderlessButtonStyle">@style/Widget.Material3Expressive.Button.TextButton</item>
 		<item name="buttonBarButtonStyle">@style/Widget.Material3Expressive.Button.TextButton.Dialog</item>
 		<item name="snackbarButtonStyle">@style/Widget.Material3Expressive.Button.TextButton.Snackbar</item>
@@ -148,6 +148,9 @@
 
 		<item name="bottomNavigationStyle">@style/Widget.Material3Expressive.BottomNavigationView</item>
 		<item name="navigationRailStyle">@style/Widget.Material3Expressive.NavigationRailView</item>
+
+		<!-- Flat cards app-wide: no drop shadow, thin outline instead. -->
+		<item name="materialCardViewStyle">@style/Widget.Kotatsu.CardView</item>
 
 		<!-- Collapsing top bars blend with the window background (no grey surface overlay) -->
 		<item name="appBarLayoutStyle">@style/Widget.Kotatsu.AppBarLayout</item>

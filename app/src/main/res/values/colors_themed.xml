@@ -21,9 +21,9 @@
 	<color name="mono_onError">#FFFFFF</color>
 	<color name="mono_errorContainer">#FFDAD6</color>
 	<color name="mono_onErrorContainer">#93000A</color>
-	<color name="mono_background">#FAFAFA</color>
+	<color name="mono_background">#F5F5F5</color>
 	<color name="mono_onBackground">#1A1A1A</color>
-	<color name="mono_surface">#FAFAFA</color>
+	<color name="mono_surface">#F5F5F5</color>
 	<color name="mono_onSurface">#1A1A1A</color>
 	<color name="mono_surfaceVariant">#E0E0E0</color>
 	<color name="mono_onSurfaceVariant">#424242</color>
@@ -45,7 +45,7 @@
 	<color name="mono_tertiaryFixedDim">#C9C9C9</color>
 	<color name="mono_onTertiaryFixedVariant">#4A4A4A</color>
 	<color name="mono_surfaceDim">#DEDEDE</color>
-	<color name="mono_surfaceBright">#FAFAFA</color>
+	<color name="mono_surfaceBright">#F5F5F5</color>
 	<color name="mono_surfaceContainerLowest">#FFFFFF</color>
 	<color name="mono_surfaceContainerLow">#F4F4F4</color>
 	<color name="mono_surfaceContainer">#EEEEEE</color>

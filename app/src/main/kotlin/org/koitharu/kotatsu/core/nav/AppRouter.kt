@@ -781,6 +781,11 @@ class AppRouter private constructor(
             Intent(context, SettingsActivity::class.java)
                 .setAction(ACTION_READER)
 
+        fun settingsSectionIntent(context: Context, fragmentClassName: String) =
+            Intent(context, SettingsActivity::class.java)
+                .setAction(ACTION_SETTINGS_SECTION)
+                .putExtra(KEY_FRAGMENT_CLASS, fragmentClassName)
+
         fun suggestionsSettingsIntent(context: Context) =
             Intent(context, SettingsActivity::class.java)
                 .setAction(ACTION_SUGGESTIONS)
@@ -871,6 +876,8 @@ class AppRouter private constructor(
         const val ACTION_SUGGESTIONS = "${BuildConfig.APPLICATION_ID}.action.MANAGE_SUGGESTIONS"
         const val ACTION_TRACKER = "${BuildConfig.APPLICATION_ID}.action.MANAGE_TRACKER"
         const val ACTION_SYNC = "${BuildConfig.APPLICATION_ID}.action.MANAGE_SYNC"
+        const val ACTION_SETTINGS_SECTION = "${BuildConfig.APPLICATION_ID}.action.MANAGE_SETTINGS_SECTION"
+        const val KEY_FRAGMENT_CLASS = "fragment_class"
 
         private const val TYPE_TEXT = "text/plain"
         private const val TYPE_CBZ = "application/x-cbz"
