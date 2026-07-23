@@ -9,6 +9,10 @@ import android.view.View
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.LinearLayout
 import androidx.activity.viewModels
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import org.koitharu.kotatsu.core.nav.AppRouter
+import org.koitharu.kotatsu.main.ui.drawer.MainDrawerContent
+import org.koitharu.kotatsu.settings.SettingsSection
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.graphics.Insets
@@ -78,7 +82,6 @@ import org.koitharu.kotatsu.local.ui.LocalIndexUpdateService
 import org.koitharu.kotatsu.local.ui.LocalStorageCleanupWorker
 import org.koitharu.kotatsu.main.ui.owners.AppBarOwner
 import org.koitharu.kotatsu.main.ui.owners.BottomNavOwner
-import org.koitharu.kotatsu.main.ui.welcome.OnboardingActivity
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.remotelist.ui.MangaSearchMenuProvider
 import org.koitharu.kotatsu.search.ui.suggestion.SearchSuggestionItemCallback
@@ -132,13 +135,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 	override val bottomNav: SlidingBottomNavigationView?
 		get() = viewBinding.bottomNav
 
+	// activity_main.xml's root is a DrawerLayout only in the phone (default) configuration;
+	// in the w840dp/w600dp-land (tablet/navRail) configurations the root is a plain LinearLayout.
+	// Data Binding can't unify these types, so it exposes drawerLayout as a plain View — cast here.
+	private val drawerLayout: androidx.drawerlayout.widget.DrawerLayout?
+		get() = viewBinding.drawerLayout as? androidx.drawerlayout.widget.DrawerLayout
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		if (!settings.isOnboardingCompleted) {
-			startActivity(Intent(this, OnboardingActivity::class.java))
-			finish()
-			return
-		}
 		setContentView(ActivityMainBinding.inflate(layoutInflater))
 		setSupportActionBar(viewBinding.searchBar)
 		// Place the search icon inline, right before the hint, and centre the whole group.
@@ -154,8 +158,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 		viewBinding.bottomNav?.setOnContinueClickListener { viewModel.openLastReader() }
 		viewBinding.buttonOverflow.setOnClickListener(this::showMainOverflowMenu)
 		viewBinding.buttonSettings.setOnClickListener {
-			router.openSettings()
+			drawerLayout?.openDrawer(GravityCompat.START)
 		}
+		setupMainDrawer()
 		viewBinding.statusBarScrim.blurTarget = viewBinding.container
 		fadingAppbarMediator =
 			FadingAppbarMediator(viewBinding.appbar, viewBinding.layoutSearch)
@@ -180,6 +185,24 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 
 		addMainOverflowMenuProvider(MainMenuProvider(viewModel))
 
+		val drawerBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
+			override fun handleOnBackPressed() {
+				drawerLayout?.closeDrawer(GravityCompat.START)
+			}
+		}
+		drawerLayout?.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.DrawerListener {
+			override fun onDrawerSlide(drawerView: View, slideOffset: Float) = Unit
+			override fun onDrawerOpened(drawerView: View) {
+				drawerBackCallback.isEnabled = true
+			}
+
+			override fun onDrawerClosed(drawerView: View) {
+				drawerBackCallback.isEnabled = false
+			}
+
+			override fun onDrawerStateChanged(newState: Int) = Unit
+		})
+		onBackPressedDispatcher.addCallback(this, drawerBackCallback)
 		val exitCallback = ExitCallback(this, viewBinding.container)
 		onBackPressedDispatcher.addCallback(exitCallback)
 		onBackPressedDispatcher.addCallback(navigationDelegate)
@@ -250,6 +273,24 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 			R.id.fab, R.id.railFab -> {
 				v.hapticFeedback(HapticEffect.CONFIRM)
 				viewModel.openLastReader()
+			}
+		}
+	}
+
+	private fun setupMainDrawer() {
+		viewBinding.drawerCompose?.apply {
+			setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+			setContent {
+				MainDrawerContent(
+					onNavItemClick = { navItem ->
+						drawerLayout?.closeDrawer(GravityCompat.START)
+						bottomNav?.selectedItemId = navItem.id
+					},
+					onSectionClick = { section: SettingsSection ->
+						drawerLayout?.closeDrawer(GravityCompat.START)
+						startActivity(AppRouter.settingsSectionIntent(this@MainActivity, section.fragmentClass.name))
+					},
+				)
 			}
 		}
 	}

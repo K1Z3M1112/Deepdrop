@@ -93,7 +93,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 	}
 
 	val isAmoledTheme: Boolean
-		get() = prefs.getBoolean(KEY_THEME_AMOLED, false)
+		get() = prefs.getBoolean(KEY_THEME_AMOLED, true)
 
 	fun setAmoledTheme(enabled: Boolean) = prefs.edit {
 		putBoolean(KEY_THEME_AMOLED, enabled)
@@ -461,17 +461,6 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		set(value) = prefs.edit {
 			putStringSet(KEY_PENDING_EXTENSION_DOWNLOADS, value.mapToSet { it.toString() })
 		}
-
-	var isShizukuInstallerEnabled: Boolean
-		get() = prefs.getBoolean(KEY_SHIZUKU_INSTALLER, false)
-		set(value) = prefs.edit {
-			putBoolean(KEY_SHIZUKU_INSTALLER, value)
-			if (!value) putBoolean(KEY_AUTO_UPDATE_EXTENSIONS, false)
-		}
-
-	var isAutoUpdateExtensionsEnabled: Boolean
-		get() = prefs.getBoolean(KEY_AUTO_UPDATE_EXTENSIONS, false)
-		set(value) = prefs.edit { putBoolean(KEY_AUTO_UPDATE_EXTENSIONS, value) }
 
 	var isExtensionUpdateNotificationsEnabled: Boolean
 		get() = prefs.getBoolean(KEY_EXTENSION_UPDATE_NOTIFICATIONS, true)
@@ -1156,8 +1145,6 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_COLLAPSE_DESCRIPTION = "description_collapse"
 		const val KEY_MANGA_LIST_BADGES = "manga_list_badges"
 		const val KEY_PENDING_EXTENSION_DOWNLOADS = "pending_extension_downloads"
-		const val KEY_SHIZUKU_INSTALLER = "shizuku_installer"
-		const val KEY_AUTO_UPDATE_EXTENSIONS = "auto_update_extensions"
 		const val KEY_EXTENSION_UPDATE_NOTIFICATIONS = "extension_update_notifications"
 		const val KEY_LAST_EXTENSION_UPDATE_NOTIFICATION_TIME = "last_extension_update_notification_time"
 		const val KEY_TAGS_WARNINGS = "tags_warnings"

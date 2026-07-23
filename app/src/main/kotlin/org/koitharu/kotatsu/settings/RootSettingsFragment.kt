@@ -39,7 +39,6 @@ import org.koitharu.kotatsu.core.github.AppUpdateRepository
 import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.settings.search.SettingsSearchMenuProvider
 import org.koitharu.kotatsu.settings.search.SettingsSearchViewModel
-import org.koitharu.kotatsu.settings.about.AboutSettingsFragment
 import org.koitharu.kotatsu.settings.compose.CategoryPalette
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
 import org.koitharu.kotatsu.settings.compose.SettingsGroup
@@ -47,7 +46,6 @@ import org.koitharu.kotatsu.settings.compose.SettingsItem
 import org.koitharu.kotatsu.settings.compose.SettingsScaffold
 import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
 import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
-import org.koitharu.kotatsu.sync.ui.SyncSettingsFragment
 import javax.inject.Inject
 
 /**
@@ -101,7 +99,7 @@ class RootSettingsFragment : BaseComposeSettingsFragment(R.string.settings) {
 	}
 }
 
-private enum class SettingsSection(
+enum class SettingsSection(
 	val titleRes: Int,
 	val iconRes: Int,
 	val paletteKey: String,
@@ -109,11 +107,6 @@ private enum class SettingsSection(
 	val fragmentClass: Class<out Fragment>,
 	val tintIcon: Boolean = true,
 ) {
-	SYNC(
-		R.string.google_drive_sync, R.drawable.ic_gdrive, "sync",
-		intArrayOf(R.string.sync_sign_in, R.string.sync_frequency),
-		SyncSettingsFragment::class.java,
-	),
 	APPEARANCE(
 		R.string.appearance, R.drawable.ic_appearance, "appearance",
 		intArrayOf(R.string.theme, R.string.list_mode, R.string.language),
@@ -154,11 +147,6 @@ private enum class SettingsSection(
 		intArrayOf(R.string.suggestions, R.string.tracking),
 		ServicesSettingsFragment::class.java,
 	),
-	ABOUT(
-		R.string.about, R.drawable.ic_info_outline, "about",
-		IntArray(0),
-		AboutSettingsFragment::class.java,
-	),
 }
 
 @Composable
@@ -183,11 +171,7 @@ private fun RootSettingsContent(
 				// each `item { pos -> ... }` body which IS @Composable.
 				SettingsSection.values().forEach { section ->
 					item { pos ->
-						val subtitle = if (section == SettingsSection.ABOUT) {
-							appVersion
-						} else {
-							section.summaryRes.joinToString { ctx.getString(it) }
-						}
+						val subtitle = section.summaryRes.joinToString { ctx.getString(it) }
 						SettingsItem(
 							title = stringResource(section.titleRes),
 							subtitle = subtitle,

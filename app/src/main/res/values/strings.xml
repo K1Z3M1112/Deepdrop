@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">DropSauce</string>
+    <string name="app_name" translatable="false">DeepDrop</string>
     <string name="local_storage">Local storage</string>
     <string name="favourites">Favorites</string>
     <string name="history">History</string>
@@ -18,6 +18,7 @@
     <string name="title_tap_to_read_summary">In favorites and history, tapping a manga\'s name opens the reader directly</string>
     <string name="increase_cover_spacing">Increase cover spacing</string>
     <string name="settings">Settings</string>
+    <string name="library">Library</string>
     <string name="remote_sources">Manga sources</string>
     <string name="extensions">Extensions</string>
     <string name="loading_">Loading...</string>
@@ -646,7 +647,7 @@
     <string name="onboarding_permission_notifications">Allow notifications</string>
     <string name="onboarding_permission_battery">Disable battery optimization</string>
     <string name="onboarding_finish_title">All set</string>
-    <string name="onboarding_finish_description">Join the DropSauce community and visit our website to stay up to date.</string>
+    <string name="onboarding_finish_description">Join the DeepDrop community and visit our website to stay up to date.</string>
     <string name="onboarding_sync_title">Sync &amp; Restore</string>
     <string name="onboarding_sync_description">Sign in with Google to sync your library across devices, or restore a backup to pick up where you left off.</string>
     <string name="onboarding_restore_dropsauce">Restore Kotatsu backup</string>
@@ -755,7 +756,7 @@
     <string name="show_pages_thumbs">Show pages thumbnails</string>
     <string name="show_pages_thumbs_summary">Enable the \"Pages\" tab on the details screen</string>
     <string name="error_no_data_received">No data was received from server</string>
-    <string name="unsupported_backup_message">Please select a valid DropSauce or Mihon backup file</string>
+    <string name="unsupported_backup_message">Please select a valid DeepDrop or Mihon backup file</string>
     <string name="list_ellipsize_pattern" translatable="false">(+%d)</string>
     <!-- Short hours format pattern -->
     <string name="hours_short">%d h</string>
@@ -834,8 +835,8 @@
     <string name="unhide">Unhide</string>
     <string name="extension_hidden">Extension hidden from Explore</string>
     <string name="extensions_hidden">Extensions hidden from Explore</string>
-    <string name="plugin_incompatible">Incompatible plugin or internal error. Make sure you are using the latest version of the plugin and DropSauce</string>
-    <string name="plugin_incompatible_with_cause">Plugin error: %s\n Make sure you are using the latest version of the plugin and DropSauce</string>
+    <string name="plugin_incompatible">Incompatible plugin or internal error. Make sure you are using the latest version of the plugin and DeepDrop</string>
+    <string name="plugin_incompatible_with_cause">Plugin error: %s\n Make sure you are using the latest version of the plugin and DeepDrop</string>
     <string name="connection_ok">Connection is OK</string>
     <string name="invalid_proxy_configuration">Invalid proxy configuration</string>
     <string name="show_quick_filters">Show quick filters</string>
@@ -923,16 +924,7 @@
     <string name="delete_old_backups_summary">Automatically delete old backup files to save storage space</string>
     <string name="handle_links">Handle links</string>
     <string name="handle_links_summary">Handle manga links from external applications (e.g. web browser). You may also need to enable it manually in the application\'s system settings</string>
-    <string name="auto_update">Auto-update</string>
-    <string name="shizuku_title">Shizuku installer (Beta)</string>
-    <string name="shizuku_summary">Grant privileged access via Shizuku for silent, no-prompt installs</string>
-    <string name="shizuku_not_installed">Shizuku is not installed. Install it, start it, then try again.</string>
-    <string name="shizuku_not_running">Shizuku is not running. Start the Shizuku app first.</string>
-    <string name="shizuku_permission_denied">Shizuku permission was denied. Allow DropSauce in Shizuku and try again.</string>
-    <string name="shizuku_install_failed">Silent installation failed. %1$s</string>
-    <string name="shizuku_invalid_package">The downloaded extension APK is invalid or has an unexpected package name.</string>
-    <string name="ext_auto_update_title">Auto-update extensions</string>
-    <string name="ext_auto_update_summary">Install extension updates silently as soon as they are detected, with a daily background check.</string>
+    <string name="auto_update">Updates</string>
     <string name="ext_update_notifications_title">Notify about extension updates</string>
     <string name="ext_update_notifications_summary">Show a notification when installed extensions have updates available.</string>
     <string name="extension_updates_available">Extension updates available</string>
@@ -981,10 +973,10 @@
     <string name="error_details">Error details</string>
     <string name="error_disclaimer_manga">Try to open manga in a web browser to ensure it is available on its source.</string>
     <string name="error_disclaimer_captcha_required">Open the source and open any manga to verify captcha</string>
-    <string name="error_disclaimer_app_outdated">It looks like your version of DropSauce is out of date. Please install the latest version to get all available fixes.</string>
+    <string name="error_disclaimer_app_outdated">It looks like your version of DeepDrop is out of date. Please install the latest version to get all available fixes.</string>
     <string name="error_disclaimer_report">You can submit a bug report to the developers. This will help us investigate and fix the issue.</string>
     <string name="link_to_manga_on_s">Link to manga on %s</string>
-    <string name="link_to_manga_in_app">Link to manga in DropSauce</string>
+    <string name="link_to_manga_in_app">Link to manga in DeepDrop</string>
     <string name="clear_browser_data">Clear browser data</string>
     <string name="clear_browser_data_summary">Clear browser data such as cache and cookies. Warning: Authorization in manga sources may become invalid</string>
     <string name="no_write_permission_to_file">Does not have permission to write a file</string>
@@ -1053,7 +1045,7 @@
     <string name="discord_token_description">Enter your Discord Token or click %s to get it using browser</string>
     <string name="discord_token_hint">Paste your Discord Token here</string>
     <string name="discord_rpc_summary">Show your reading status on Discord</string>
-    <string name="discord_rpc_description">Reading manga on DropSauce - a manga reader app</string>
+    <string name="discord_rpc_description">Reading manga on DeepDrop - a manga reader app</string>
     <string name="reading_s">Reading %s</string>
     <string name="read_on_s">Read on %s</string>
     <string name="rpc_skip_nsfw_summary">Do not use RPC for adult content</string>

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.plus
 import org.koitharu.kotatsu.core.exceptions.EmptyHistoryException
@@ -20,7 +19,6 @@ import org.koitharu.kotatsu.core.prefs.observeAsStateFlow
 import org.koitharu.kotatsu.core.ui.BaseViewModel
 import org.koitharu.kotatsu.core.util.ext.MutableEventFlow
 import org.koitharu.kotatsu.core.util.ext.call
-import org.koitharu.kotatsu.extensions.install.ExtensionUpdateWorker
 import org.koitharu.kotatsu.history.data.HistoryRepository
 import org.koitharu.kotatsu.main.domain.ReadingResumeEnabledUseCase
 import org.koitharu.kotatsu.mihon.MihonExtensionManager
@@ -40,7 +38,6 @@ class MainViewModel @Inject constructor(
 	readingResumeEnabledUseCase: ReadingResumeEnabledUseCase,
 	private val mihonExtensionManager: MihonExtensionManager,
 	private val externalRepoRepository: ExternalExtensionRepoRepository,
-	private val extensionUpdateScheduler: ExtensionUpdateWorker.Scheduler,
 ) : BaseViewModel() {
 
 	val hasExtensionUpdates: StateFlow<Boolean> = combine(
@@ -57,14 +54,6 @@ class MainViewModel @Inject constructor(
 			}
 		} catch (_: Exception) {
 			false
-		}
-	}.onEach { hasUpdates ->
-		if (
-			hasUpdates &&
-			settings.isShizukuInstallerEnabled &&
-			settings.isAutoUpdateExtensionsEnabled
-		) {
-			extensionUpdateScheduler.startNow()
 		}
 	}.flowOn(Dispatchers.IO)
 		.stateIn(

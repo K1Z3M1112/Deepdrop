@@ -168,6 +168,42 @@
 	<style name="Widget.Kotatsu.AppBarLayout" parent="Widget.Material3.AppBarLayout">
 		<item name="android:background">?android:attr/colorBackground</item>
 		<item name="liftOnScrollColor">?android:attr/colorBackground</item>
+		<!-- Flat, Win7-style: no shadow, and no per-frame elevation animation while scrolling. -->
+		<item name="elevation">0dp</item>
+		<item name="android:stateListAnimator">@null</item>
+	</style>
+
+	<!-- Flat, Win7-style card: no drop shadow, a thin outline instead so panels are still
+	     legible against the background. Wired app-wide via materialCardViewStyle. -->
+	<style name="Widget.Kotatsu.CardView" parent="Widget.Material3.CardView.Elevated">
+		<item name="cardElevation">0dp</item>
+		<item name="strokeWidth">1dp</item>
+		<item name="strokeColor">?attr/colorOutlineVariant</item>
+	</style>
+
+	<!-- Flat, Win7-style FAB: no drop shadow. -->
+	<style name="Widget.Kotatsu.FloatingActionButton" parent="Widget.Material3Expressive.FloatingActionButton">
+		<item name="elevation">0dp</item>
+		<item name="hoveredFocusedTranslationZ">0dp</item>
+		<item name="pressedTranslationZ">0dp</item>
+	</style>
+
+	<style name="Widget.Kotatsu.FloatingActionButton.Medium" parent="Widget.Material3Expressive.FloatingActionButton.Medium">
+		<item name="elevation">0dp</item>
+		<item name="hoveredFocusedTranslationZ">0dp</item>
+		<item name="pressedTranslationZ">0dp</item>
+	</style>
+
+	<style name="Widget.Kotatsu.FloatingActionButton.Large" parent="Widget.Material3Expressive.FloatingActionButton.Large">
+		<item name="elevation">0dp</item>
+		<item name="hoveredFocusedTranslationZ">0dp</item>
+		<item name="pressedTranslationZ">0dp</item>
+	</style>
+
+	<!-- Flat, Win7-style "elevated" button: same visual role, but no drop shadow. -->
+	<style name="Widget.Kotatsu.Button.Elevated" parent="Widget.Material3Expressive.Button.ElevatedButton">
+		<item name="elevation">0dp</item>
+		<item name="android:stateListAnimator">@null</item>
 	</style>
 
 	<style name="Widget.Kotatsu.CollapsingToolbar" parent="Widget.Material3.CollapsingToolbar">
@@ -580,21 +616,24 @@
 
 	<!-- Shapes -->
 
-	<!-- PixelPlayer M3 shape scale: small=8dp, medium=16dp, large=24dp -->
+	<!-- Flat/Win7-style corner scale: small, mostly-square corners instead of the M3 Expressive
+	     8/16/24dp scale. Wired into every component via shapeAppearanceCornerSmall/Medium/Large
+	     in Base.Theme.Kotatsu, so this one change flattens buttons, cards, dialogs, menus, chips,
+	     bottom sheets etc. app-wide. -->
 	<style name="ShapeAppearance.Kotatsu.CornerFull" parent="ShapeAppearance.Material3.Corner.Full">
 		<item name="cornerSize">50%</item>
 	</style>
 
 	<style name="ShapeAppearance.Kotatsu.CornerSmall" parent="ShapeAppearance.Material3.Corner.Small">
-		<item name="cornerSize">8dp</item>
+		<item name="cornerSize">2dp</item>
 	</style>
 
 	<style name="ShapeAppearance.Kotatsu.CornerMedium" parent="ShapeAppearance.Material3.Corner.Medium">
-		<item name="cornerSize">16dp</item>
+		<item name="cornerSize">3dp</item>
 	</style>
 
 	<style name="ShapeAppearance.Kotatsu.CornerLarge" parent="ShapeAppearance.Material3.Corner.Large">
-		<item name="cornerSize">24dp</item>
+		<item name="cornerSize">4dp</item>
 	</style>
 
 	<style name="ShapeAppearanceOverlay.Kotatsu.Cover" parent="">

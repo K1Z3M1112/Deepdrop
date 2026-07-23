@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<androidx.drawerlayout.widget.DrawerLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/drawerLayout"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+<androidx.coordinatorlayout.widget.CoordinatorLayout
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	tools:context=".main.ui.MainActivity">
@@ -174,6 +179,18 @@
 		android:layout_height="wrap_content"
 		android:layout_gravity="bottom"
 		android:background="@android:color/transparent"
-		android:fitsSystemWindows="false" />
+		android:fitsSystemWindows="false"
+		android:visibility="invisible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+	<androidx.compose.ui.platform.ComposeView
+		android:id="@+id/drawerCompose"
+		android:layout_width="320dp"
+		android:layout_height="match_parent"
+		android:layout_gravity="start"
+		android:background="?attr/colorSurface"
+		android:elevation="8dp"
+		android:fitsSystemWindows="true" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

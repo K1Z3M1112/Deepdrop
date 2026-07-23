@@ -84,7 +84,10 @@ open class BaseApp : Application(), Configuration.Provider {
 		appLogger.setEnabled(settings.isVerboseLoggingEnabled)
 		// Keep default platform security provider.
 		setupActivityLifecycleCallbacks()
-		cleanupDownloadedExtensionApks()
+		// File/DownloadManager I/O — off the main thread so it can't add to cold-start time.
+		processLifecycleScope.launch(Dispatchers.Default) {
+			cleanupDownloadedExtensionApks()
+		}
 		processLifecycleScope.launch {
 			ACRA.errorReporter.putCustomData("isOriginalApp", appValidator.isOriginalApp.getOrNull().toString())
 			ACRA.errorReporter.putCustomData("isMiui", RomCompat.isMiui.getOrNull().toString())

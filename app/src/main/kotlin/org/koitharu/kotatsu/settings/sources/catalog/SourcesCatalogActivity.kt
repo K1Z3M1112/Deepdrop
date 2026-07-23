@@ -44,7 +44,6 @@ import org.koitharu.kotatsu.core.model.titleResId
 import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.core.network.BaseHttpClient
-import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.ui.BaseActivity
 import org.koitharu.kotatsu.core.ui.widgets.ChipsView
 import org.koitharu.kotatsu.core.ui.widgets.ChipsView.ChipModel
@@ -58,8 +57,6 @@ import org.koitharu.kotatsu.core.util.ext.smoothScrollToTop
 import org.koitharu.kotatsu.core.util.ext.toLocale
 import org.koitharu.kotatsu.core.ui.dialog.setEditText
 import org.koitharu.kotatsu.databinding.ActivitySourcesCatalogBinding
-import org.koitharu.kotatsu.extensions.install.ExtensionUpdateWorker
-import org.koitharu.kotatsu.extensions.install.ShizukuExtensionInstaller
 import org.koitharu.kotatsu.list.ui.adapter.ListHeaderClickListener
 import org.koitharu.kotatsu.list.ui.adapter.TypedListSpacingDecoration
 import org.koitharu.kotatsu.list.ui.model.ListHeader
@@ -80,15 +77,6 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 
 	override val appBar: AppBarLayout
 		get() = viewBinding.appbar
-
-	@Inject
-	lateinit var settings: AppSettings
-
-	@Inject
-	lateinit var shizukuInstaller: ShizukuExtensionInstaller
-
-	@Inject
-	lateinit var extensionUpdateScheduler: ExtensionUpdateWorker.Scheduler
 
 	@Inject
 	@BaseHttpClient
@@ -163,13 +151,6 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 		viewModel.hasUpdates.observe(this) { hasUpdates ->
 			hasPendingUpdates = hasUpdates
 			applyRecyclerPadding(lastSystemBarsInsets)
-			if (
-				hasUpdates &&
-				settings.isShizukuInstallerEnabled &&
-				settings.isAutoUpdateExtensionsEnabled
-			) {
-				lifecycleScope.launch { extensionUpdateScheduler.startNow() }
-			}
 		}
 		viewModel.isRefreshing.observe(this) {
 			viewBinding.swipeRefreshLayout.isRefreshing = it
@@ -215,9 +196,7 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 			updateFilers(it.filter, it.contentTypes, it.locales, it.isNsfwDisabled)
 		}
 		addMenuProvider(SourcesCatalogMenuProvider(this, viewModel, this, isExternalOnly))
-		if (!settings.isShizukuInstallerEnabled) {
-			ensureInstallPermissionAccess()
-		}
+		ensureInstallPermissionAccess()
 		handleAddRepoDeepLink(intent)
 		viewBinding.buttonScrollToTop.setOnClickListener {
 			viewBinding.recyclerView.smoothScrollToTop()
@@ -488,7 +467,7 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 	}
 
 	private fun processInstallQueue() {
-		if (!settings.isShizukuInstallerEnabled && !canInstallPackages()) {
+		if (!canInstallPackages()) {
 			requestInstallPackagesPermission()
 			return
 		}
@@ -556,61 +535,6 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 
 	private fun installDownloadedApk(downloadId: Long) {
 		val pendingDownload = downloadRequestsById.remove(downloadId)
-		val apkFile = getDownloadedApkFile(pendingDownload?.fileName)
-		val expectedPackage = pendingDownload?.packageName ?: apkFile?.let(::getArchivePackageName)
-		if (
-			settings.isShizukuInstallerEnabled &&
-			expectedPackage != null &&
-			apkFile?.isFile == true
-		) {
-			activeInstallerPackage = expectedPackage
-			activeInstallerFileName = pendingDownload?.fileName
-			activeInstallerDownloadId = downloadId
-			isInstallerActive = true
-			lifecycleScope.launch {
-				when (val result = shizukuInstaller.install(apkFile, expectedPackage)) {
-					ShizukuExtensionInstaller.InstallResult.Success -> {
-						finishActiveInstaller(refresh = true)
-						processDownloadedInstallerQueue()
-					}
-					ShizukuExtensionInstaller.InstallResult.Unavailable -> {
-						Toast.makeText(
-							this@SourcesCatalogActivity,
-							R.string.shizuku_not_running,
-							Toast.LENGTH_LONG,
-						).show()
-						finishActiveInstaller(refresh = false)
-						processDownloadedInstallerQueue()
-					}
-					ShizukuExtensionInstaller.InstallResult.InvalidPackage -> {
-						Toast.makeText(
-							this@SourcesCatalogActivity,
-							R.string.shizuku_invalid_package,
-							Toast.LENGTH_LONG,
-						).show()
-						finishActiveInstaller(refresh = false)
-						processDownloadedInstallerQueue()
-					}
-					is ShizukuExtensionInstaller.InstallResult.Failure -> {
-						Toast.makeText(
-							this@SourcesCatalogActivity,
-							getString(R.string.shizuku_install_failed, result.message.orEmpty()),
-							Toast.LENGTH_LONG,
-						).show()
-						finishActiveInstaller(refresh = false)
-						processDownloadedInstallerQueue()
-					}
-				}
-			}
-			return
-		}
-		if (settings.isShizukuInstallerEnabled) {
-			Toast.makeText(this, R.string.shizuku_invalid_package, Toast.LENGTH_LONG).show()
-			viewModel.clearExtensionInProgress(expectedPackage ?: pendingDownload?.packageName)
-			removeDownloadedApk(pendingDownload?.fileName)
-			processDownloadedInstallerQueue()
-			return
-		}
 		pendingDownload?.let { downloadRequestsById[downloadId] = it }
 		installDownloadedApkWithSystem(downloadId)
 	}
@@ -679,10 +603,6 @@ class SourcesCatalogActivity : BaseActivity<ActivitySourcesCatalogBinding>(),
 			return null
 		}
 		return File(downloadsDir, fileName).takeIf { it.exists() }
-	}
-
-	private fun getArchivePackageName(apkFile: File): String? {
-		return packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)?.packageName
 	}
 
 	@Suppress("DEPRECATION")

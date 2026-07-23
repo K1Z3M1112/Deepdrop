@@ -18,7 +18,6 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.CollapsingToolbarLayout
-import com.google.android.material.transition.MaterialSharedAxis
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,7 +36,6 @@ import org.koitharu.kotatsu.core.util.ext.textAndVisible
 import android.widget.TextView
 import org.koitharu.kotatsu.databinding.ActivitySettingsBinding
 import org.koitharu.kotatsu.main.ui.owners.AppBarOwner
-import org.koitharu.kotatsu.settings.about.AboutSettingsFragment
 import org.koitharu.kotatsu.settings.discord.DiscordSettingsFragment
 import org.koitharu.kotatsu.settings.search.SettingsItem
 import org.koitharu.kotatsu.settings.search.SettingsSearchFragment
@@ -45,7 +43,6 @@ import org.koitharu.kotatsu.settings.search.SettingsSearchViewModel
 import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
 import org.koitharu.kotatsu.settings.sources.SourceSettingsFragment
 import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
-import org.koitharu.kotatsu.sync.ui.SyncSettingsFragment
 
 @AndroidEntryPoint
 class SettingsActivity :
@@ -72,6 +69,10 @@ class SettingsActivity :
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		// Settings always enters as a full-screen slide from the left, and (see finish())
+		// leaves back out to the left the same way it came in — one consistent axis.
+		@Suppress("DEPRECATION")
+		overridePendingTransition(R.anim.settings_slide_in_left_edge, R.anim.settings_slide_out_right_parallax)
 		setContentView(ActivitySettingsBinding.inflate(layoutInflater))
 		setDisplayHomeAsUp(isEnabled = true, showUpAsClose = false)
 		val fm = supportFragmentManager
@@ -139,16 +140,16 @@ class SettingsActivity :
 		val fm = supportFragmentManager
 		val current = fm.findFragmentById(R.id.container)
 		val hasFragment = current != null
-		// M3 Expressive shared-axis (X) transitions. They are seekable androidx Transitions,
-		// so the system predictive-back gesture animates them instead of a plain cross-fade.
+		// Plain cross-fade instead of the M3 shared-axis slide/scale: cheaper to render every
+		// navigation (no offscreen transform layers) and matches the flatter, simpler look.
 		current?.apply {
-			exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-			reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+			exitTransition = android.transition.Fade()
+			reenterTransition = android.transition.Fade()
 		}
 		val fragment = fm.fragmentFactory.instantiate(classLoader, fragmentClass.name).apply {
 			arguments = args
-			enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-			returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
+			enterTransition = android.transition.Fade()
+			returnTransition = android.transition.Fade()
 		}
 		fm.commit {
 			setReorderingAllowed(true)
@@ -180,7 +181,6 @@ class SettingsActivity :
 			AppRouter.ACTION_READER -> ReaderSettingsFragment()
 			AppRouter.ACTION_SUGGESTIONS -> SuggestionsSettingsFragment()
 			AppRouter.ACTION_TRACKER -> TrackerSettingsFragment()
-			AppRouter.ACTION_SYNC -> SyncSettingsFragment()
 			AppRouter.ACTION_SOURCES -> ExtensionsSettingsFragment()
 			AppRouter.ACTION_MANAGE_DISCORD -> DiscordSettingsFragment()
 			AppRouter.ACTION_PROXY -> ProxySettingsFragment()
@@ -189,11 +189,8 @@ class SettingsActivity :
 				MangaSource(intent.getStringExtra(AppRouter.KEY_SOURCE)),
 			)
 
-			Intent.ACTION_VIEW -> {
-				when (intent.data?.host) {
-					HOST_ABOUT -> AboutSettingsFragment()
-					else -> null
-				}
+			AppRouter.ACTION_SETTINGS_SECTION -> intent.getStringExtra(AppRouter.KEY_FRAGMENT_CLASS)?.let { name ->
+				supportFragmentManager.fragmentFactory.instantiate(classLoader, name)
 			}
 
 			else -> null
@@ -233,9 +230,16 @@ class SettingsActivity :
 		}
 	}
 
+	override fun finish() {
+		super.finish()
+		// Mirror the entry animation so Settings always slides back out to the left,
+		// with the previous screen sliding back in from the right underneath it.
+		@Suppress("DEPRECATION")
+		overridePendingTransition(R.anim.settings_slide_in_right_parallax, R.anim.settings_slide_out_left_edge)
+	}
+
 	companion object {
 
-		private const val HOST_ABOUT = "about"
 		const val ARG_PREF_KEY = "pref_key"
 	}
 }

@@ -18,9 +18,9 @@
 	<color name="kotatsu_tertiaryContainer">#EAEAEA</color>
 	<color name="kotatsu_onTertiary">#FFFFFF</color>
 	<color name="kotatsu_onTertiaryContainer">#333333</color>
-	<color name="kotatsu_surface">#FAFAFA</color>
+	<color name="kotatsu_surface">#F5F5F5</color>
 	<color name="kotatsu_surfaceDim">#DEDEDE</color>
-	<color name="kotatsu_surfaceBright">#FAFAFA</color>
+	<color name="kotatsu_surfaceBright">#F5F5F5</color>
 	<color name="kotatsu_surfaceContainerLowest">#FFFFFF</color>
 	<color name="kotatsu_surfaceContainerLow">#F4F4F4</color>
 	<color name="kotatsu_surfaceContainer">#EEEEEE</color>
@@ -31,6 +31,6 @@
 	<color name="kotatsu_onSurfaceVariant">#424242</color>
 	<color name="kotatsu_inverseSurface">#2E2E2E</color>
 	<color name="kotatsu_inverseOnSurface">#F2F2F2</color>
-	<color name="kotatsu_background">#FAFAFA</color>
+	<color name="kotatsu_background">#F5F5F5</color>
 	<color name="kotatsu_outline">#757575</color>
 </resources>
