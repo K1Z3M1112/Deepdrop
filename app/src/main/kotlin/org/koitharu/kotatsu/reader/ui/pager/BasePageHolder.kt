@@ -1,0 +1,371 @@
+package org.koitharu.kotatsu.reader.ui.pager
+
+import android.content.ComponentCallbacks2
+import android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE
+import android.content.Context
+import android.content.res.Configuration
+import android.graphics.drawable.Animatable
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.view.View
+import android.widget.ImageView
+import androidx.annotation.CallSuper
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.viewbinding.ViewBinding
+import coil3.request.ImageRequest
+import coil3.request.target
+import com.davemorrissey.labs.subscaleview.DefaultOnImageEventListener
+import com.davemorrissey.labs.subscaleview.ImageSource
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.koitharu.kotatsu.BuildConfig
+import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.core.exceptions.resolve.ExceptionResolver
+import org.koitharu.kotatsu.core.image.AnimatedImageDetector
+import org.koitharu.kotatsu.core.os.NetworkState
+import org.koitharu.kotatsu.core.ui.list.lifecycle.LifecycleAwareViewHolder
+import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
+import org.koitharu.kotatsu.core.util.ext.isLowRamDevice
+import org.koitharu.kotatsu.core.util.ext.isSerializable
+import org.koitharu.kotatsu.core.util.ext.observe
+import org.koitharu.kotatsu.databinding.LayoutPageInfoBinding
+import org.koitharu.kotatsu.parsers.util.ifZero
+import org.koitharu.kotatsu.reader.domain.PageLoader
+import org.koitharu.kotatsu.reader.domain.UpscaleEffect
+import org.koitharu.kotatsu.reader.ui.config.ReaderSettings
+import org.koitharu.kotatsu.reader.ui.pager.vm.PageState
+import org.koitharu.kotatsu.reader.ui.pager.vm.PageViewModel
+import org.koitharu.kotatsu.reader.ui.pager.webtoon.WebtoonHolder
+
+abstract class BasePageHolder<B : ViewBinding>(
+	protected val binding: B,
+	loader: PageLoader,
+	readerSettingsProducer: ReaderSettings.Producer,
+	networkState: NetworkState,
+	exceptionResolver: ExceptionResolver,
+	lifecycleOwner: LifecycleOwner,
+) : LifecycleAwareViewHolder(binding.root, lifecycleOwner), DefaultOnImageEventListener, ComponentCallbacks2 {
+
+	protected val viewModel = PageViewModel(
+		loader = loader,
+		settingsProducer = readerSettingsProducer,
+		networkState = networkState,
+		exceptionResolver = exceptionResolver,
+		isWebtoon = this is WebtoonHolder,
+	)
+	protected val bindingInfo = LayoutPageInfoBinding.bind(binding.root)
+	protected abstract val ssiv: SubsamplingScaleImageView
+
+	/** Overlay shown instead of [ssiv] for pages whose source has more than one frame (animated
+	 * GIF/WebP/AVIF); [ssiv] only ever renders a single static frame regardless of format. */
+	protected abstract val animatedImageView: ImageView
+
+	/** Small manual trigger shown over the (still static) page once a multi-frame source is
+	 * detected. Playback only starts once the user taps it -- kept manual, rather than starting
+	 * automatically, since automatic playback has proven unreliable across devices. */
+	protected abstract val animatedPlayButton: View
+
+	private val pageLoader = loader
+	private var animatedCheckJob: Job? = null
+	private var animatedRequestDisposable: coil3.request.Disposable? = null
+	private var pendingAnimatedUri: Uri? = null
+
+	protected val settings: ReaderSettings
+		get() = viewModel.settingsProducer.value
+
+	val context: Context
+		get() = itemView.context
+
+	var boundData: ReaderPage? = null
+		private set
+
+	init {
+		lifecycleScope.launch(Dispatchers.Main) {
+			ssiv.bindToLifecycle(this@BasePageHolder)
+			ssiv.isEagerLoadingEnabled = !context.isLowRamDevice()
+			ssiv.addOnImageEventListener(viewModel)
+			ssiv.addOnImageEventListener(this@BasePageHolder)
+		}
+		val clickListener = View.OnClickListener { v ->
+			when (v.id) {
+				R.id.button_retry -> viewModel.retry(
+					page = boundData?.toMangaPage() ?: return@OnClickListener,
+					isFromUser = true,
+				)
+
+				R.id.button_error_details -> viewModel.showErrorDetails(boundData?.url)
+			}
+		}
+		bindingInfo.buttonRetry.setOnClickListener(clickListener)
+		bindingInfo.buttonErrorDetails.setOnClickListener(clickListener)
+	}
+
+	@CallSuper
+	protected open fun onConfigChanged(settings: ReaderSettings) {
+		settings.applyBackground(itemView)
+		if (settings.applyBitmapConfig(ssiv)) {
+			reloadImage()
+		} else if (viewModel.state.value is PageState.Shown) {
+			onReady()
+		}
+		if (!settings.isPageAnimationsEnabled) {
+			resetAnimatedImage()
+		} else {
+			(viewModel.state.value as? PageState.Loaded)?.let { checkAnimated(it.source) }
+				?: (viewModel.state.value as? PageState.Shown)?.let { checkAnimated(it.source) }
+		}
+		ssiv.applyDownSampling(isResumed())
+		applyUpscale()
+	}
+
+	fun reloadImage() {
+		val source = (viewModel.state.value as? PageState.Shown)?.source ?: return
+		ssiv.setImage(source)
+	}
+
+	fun bind(data: ReaderPage) {
+		if (boundData?.id != data.id) {
+			clearUpscale()
+			resetAnimatedImage()
+		}
+		boundData = data
+		viewModel.onBind(data.toMangaPage())
+		onBind(data)
+	}
+
+	@CallSuper
+	protected open fun onBind(data: ReaderPage) = Unit
+
+	override fun onCreate() {
+		super.onCreate()
+		context.registerComponentCallbacks(this)
+		viewModel.state.observe(this, ::onStateChanged)
+		viewModel.settingsProducer.observe(this, ::onConfigChanged)
+		animatedPlayButton.setOnClickListener { playAnimatedImage() }
+	}
+
+	override fun onResume() {
+		super.onResume()
+		ssiv.applyDownSampling(isForeground = true)
+		if (viewModel.state.value is PageState.Error && !viewModel.isLoading()) {
+			boundData?.let { viewModel.retry(it.toMangaPage(), isFromUser = false) }
+		}
+	}
+
+	override fun onPause() {
+		super.onPause()
+		ssiv.applyDownSampling(isForeground = false)
+	}
+
+	override fun onDestroy() {
+		context.unregisterComponentCallbacks(this)
+		super.onDestroy()
+	}
+
+	open fun onAttachedToWindow() = Unit
+
+	open fun onDetachedFromWindow() = Unit
+
+	@CallSuper
+	open fun onRecycled() {
+		clearUpscale()
+		resetAnimatedImage()
+		viewModel.onRecycle()
+		ssiv.recycle()
+	}
+
+	override fun onTrimMemory(level: Int) {
+		// TODO
+	}
+
+	override fun onConfigurationChanged(newConfig: Configuration) = Unit
+
+	@Deprecated("Deprecated in Java")
+	@Suppress("DEPRECATION")
+	final override fun onLowMemory() = onTrimMemory(TRIM_MEMORY_COMPLETE)
+
+	protected open fun onStateChanged(state: PageState) {
+		bindingInfo.layoutError.isVisible = state is PageState.Error
+		bindingInfo.layoutProgress.isGone = state.isFinalState()
+		val progress = (state as? PageState.Loading)?.progress ?: -1
+		if (progress in 0..100) {
+			bindingInfo.progressBar.isIndeterminate = false
+			bindingInfo.progressBar.setProgressCompat(progress, true)
+		} else {
+			bindingInfo.progressBar.isIndeterminate = true
+		}
+		when (state) {
+			is PageState.Converting -> {
+				bindingInfo.textViewStatus.setText(R.string.processing_)
+				bindingInfo.textViewStatus.isVisible = true
+			}
+
+			is PageState.Empty -> {
+				bindingInfo.textViewStatus.isVisible = false
+			}
+
+			is PageState.Error -> {
+				val e = state.error
+				bindingInfo.textViewError.text = e.getDisplayMessage(context.resources)
+				bindingInfo.buttonRetry.setText(
+					ExceptionResolver.getResolveStringId(e).ifZero { R.string.try_again },
+				)
+				bindingInfo.buttonErrorDetails.isVisible = e.isSerializable()
+				bindingInfo.layoutError.isVisible = true
+				bindingInfo.progressBar.hide()
+			}
+
+			is PageState.Loaded -> {
+				bindingInfo.textViewStatus.setText(R.string.preparing_)
+				bindingInfo.textViewStatus.isVisible = true
+				ssiv.setImage(state.source)
+				checkAnimated(state.source)
+			}
+
+			is PageState.Loading -> {
+				bindingInfo.textViewStatus.isVisible = false
+				bindingInfo.progressBar.show()
+				if (state.preview != null && ssiv.getState() == null) {
+					ssiv.setImage(state.preview)
+				}
+			}
+
+			is PageState.Shown -> ssiv.post { applyUpscale() }
+
+			is PageState.Animated -> {
+				// SSIV could not decode this source at all (e.g. no AVIF support), so unlike the
+				// checkAnimated() path there is no static frame to fall back to if animations are
+				// off -- show it via animatedImageView regardless, just without auto-starting playback.
+				bindingInfo.textViewStatus.isVisible = false
+				bindingInfo.progressBar.hide()
+				showAnimatedImage(state.source, autoStart = settings.isPageAnimationsEnabled)
+			}
+		}
+	}
+
+	private fun applyUpscale() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+			return
+		}
+		// gate on the page's native resolution vs screen, not the current zoom level,
+		// so high-res pages never get processed no matter how far the user zooms in
+		val fitScale = if (ssiv.isReady && ssiv.sWidth > 0) {
+			ssiv.width / ssiv.sWidth.toFloat()
+		} else {
+			0f
+		}
+		val isPowerSaveMode = context.getSystemService(PowerManager::class.java)?.isPowerSaveMode == true
+		val effect = if (settings.isUpscaleEnabled && !isPowerSaveMode && fitScale > UpscaleEffect.MIN_SCALE) {
+			UpscaleEffect.create(fitScale)
+		} else {
+			null
+		}
+		boundData?.let { UpscaleEffect.registerView(it.id, ssiv) }
+		ssiv.setRenderEffect(effect)
+		boundData?.let { UpscaleEffect.setActive(it.id, effect != null) }
+	}
+
+	private fun clearUpscale() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+			return
+		}
+		ssiv.setRenderEffect(null)
+		boundData?.let { UpscaleEffect.setActive(it.id, false) }
+	}
+
+	/** [ssiv] can only ever show a single frame, so a page with more than one frame needs to be
+	 * routed to [animatedImageView] instead, where Coil can drive playback. Detection only offers
+	 * playback via [animatedPlayButton]; it never switches the view over by itself, since starting
+	 * automatically has proven unreliable to actually animate on some devices/formats. */
+	private fun checkAnimated(source: ImageSource) {
+		animatedCheckJob?.cancel()
+		if (!settings.isPageAnimationsEnabled) {
+			resetAnimatedImage()
+			return
+		}
+		val uri = (source as? ImageSource.Uri)?.uri
+		if (uri == null) {
+			resetAnimatedImage()
+			return
+		}
+		animatedCheckJob = lifecycleScope.launch {
+			val isAnimated = withContext(Dispatchers.Default) { AnimatedImageDetector.isAnimated(uri) }
+			if (isAnimated && settings.isPageAnimationsEnabled) {
+				pendingAnimatedUri = uri
+				animatedPlayButton.isVisible = true
+			} else {
+				resetAnimatedImage()
+			}
+		}
+	}
+
+	/** Triggered only by the user tapping [animatedPlayButton]. [ssiv] is still fed the same
+	 * source and kept in the hierarchy (just hidden) so webtoon scroll-range math, which depends
+	 * on its measured size, keeps working unchanged. The drawable's [Animatable.start] is called
+	 * explicitly on success instead of relying purely on Coil's own auto-start/stop handling. */
+	private fun playAnimatedImage() {
+		val uri = pendingAnimatedUri ?: return
+		pendingAnimatedUri = null
+		animatedPlayButton.isVisible = false
+		showAnimatedImage(uri)
+	}
+
+	/** For [PageState.Animated]: [ssiv] never had a frame to show in the first place (its decoder
+	 * rejected the source outright, e.g. no AVIF support), so unlike [playAnimatedImage] there's no
+	 * static preview worth waiting behind a tap -- show it here immediately instead. [autoStart]
+	 * still gates actual playback so the "animations off" setting is respected; when off, this
+	 * source is shown paused on its first frame rather than left blank. */
+	private fun showAnimatedImage(source: ImageSource, autoStart: Boolean = true) {
+		val uri = (source as? ImageSource.Uri)?.uri ?: return
+		showAnimatedImage(uri, autoStart)
+	}
+
+	private fun showAnimatedImage(uri: Uri, autoStart: Boolean = true) {
+		animatedPlayButton.isVisible = false
+		animatedRequestDisposable?.dispose()
+		ssiv.visibility = View.INVISIBLE
+		animatedImageView.isVisible = true
+		val request = ImageRequest.Builder(context)
+			.data(uri)
+			.target(animatedImageView)
+			.listener(
+				onSuccess = { _, _ ->
+					if (autoStart) {
+						(animatedImageView.drawable as? Animatable)?.start()
+					}
+				},
+			)
+			.build()
+		animatedRequestDisposable = pageLoader.imageLoader.enqueue(request)
+	}
+
+	private fun resetAnimatedImage() {
+		animatedCheckJob?.cancel()
+		pendingAnimatedUri = null
+		animatedPlayButton.isVisible = false
+		animatedRequestDisposable?.dispose()
+		animatedRequestDisposable = null
+		if (animatedImageView.isVisible) {
+			(animatedImageView.drawable as? Animatable)?.stop()
+			animatedImageView.setImageDrawable(null)
+			animatedImageView.isVisible = false
+		}
+		ssiv.visibility = View.VISIBLE
+	}
+
+	protected fun SubsamplingScaleImageView.applyDownSampling(isForeground: Boolean) {
+		downSampling = when {
+			isForeground || !settings.isReaderOptimizationEnabled -> 1
+			BuildConfig.DEBUG -> 32
+			context.isLowRamDevice() -> 8
+			else -> 4
+		}
+	}
+}
