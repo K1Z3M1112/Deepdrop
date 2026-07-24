@@ -358,10 +358,11 @@ abstract class BasePageHolder<B : ViewBinding>(
 
 		ssiv.visibility = View.INVISIBLE
 		animatedImageView.isVisible = true
+		
+		// นำบรรทัด .size() ออก เพื่อให้ใช้การทำงานอัตโนมัติ ไม่เปลืองหน่วยความจำ
 		val request = ImageRequest.Builder(context)
 			.data(uri)
 			.target(animatedImageView)
-			.size(coil3.size.Size.ORIGINAL) // <--- เพิ่มบรรทัดนี้ เพื่อบังคับให้ภาพคงสัดส่วนดั้งเดิม
 			.scale(Scale.FIT)
 			.listener(
 				onSuccess = { _, result ->
