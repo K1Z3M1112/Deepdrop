@@ -361,6 +361,7 @@ abstract class BasePageHolder<B : ViewBinding>(
 		val request = ImageRequest.Builder(context)
 			.data(uri)
 			.target(animatedImageView)
+			.size(coil3.size.Size.ORIGINAL) // <--- เพิ่มบรรทัดนี้ เพื่อบังคับให้ภาพคงสัดส่วนดั้งเดิม
 			.scale(Scale.FIT)
 			.listener(
 				onSuccess = { _, result ->
