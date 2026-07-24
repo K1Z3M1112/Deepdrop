@@ -69,14 +69,9 @@ class AvifImageDecoder(
 				message = AvifDecoder.resultToString(result),
 			)
 		}
-		val (dstWidth, dstHeight) = dstSize(bitmap.width, bitmap.height)
-		return if (dstWidth < bitmap.width || dstHeight < bitmap.height) {
-			val scaled = bitmap.scale(dstWidth, dstHeight)
-			bitmap.recycle()
-			DecodeResult(image = scaled.asImage(), isSampled = true)
-		} else {
-			DecodeResult(image = bitmap.asImage(), isSampled = false)
-		}
+		
+		// ปิดการบีบขนาดตาม View ทิ้งไป ส่งภาพขนาดดั้งเดิมกลับไป 100% เพื่อไม่ให้รูปผิดทรง
+		return DecodeResult(image = bitmap.asImage(), isSampled = false)
 	}
 
 	/**
@@ -96,11 +91,14 @@ class AvifImageDecoder(
 		frameCount: Int,
 		rawBytes: ByteBuffer,
 	): DecodeResult {
-		val (reqWidth, reqHeight) = dstSize(decoder.width, decoder.height)
+		// เปลี่ยนมาอ้างอิงความกว้าง/ความสูงจริงของตัวถอดรหัสภาพ 100% ไม่อ้างอิงหน้าจอ
 		val bytesPerPixel = if (config == Bitmap.Config.ARGB_8888) 4 else 2
-		val scale = perFrameScale(reqWidth, reqHeight, bytesPerPixel)
-		val dstWidth = (reqWidth * scale).toInt().coerceAtLeast(1)
-		val dstHeight = (reqHeight * scale).toInt().coerceAtLeast(1)
+		val scale = perFrameScale(decoder.width, decoder.height, bytesPerPixel)
+		
+		// คืนค่าความกว้างและความสูงโดยคูณสเกลเดียวกัน (รักษาสัดส่วนเป๊ะๆ)
+		val dstWidth = (decoder.width * scale).toInt().coerceAtLeast(1)
+		val dstHeight = (decoder.height * scale).toInt().coerceAtLeast(1)
+		
 		val needsScaling = dstWidth < decoder.width || dstHeight < decoder.height
 
 		val firstBitmap = createBitmap(decoder.width, decoder.height, config)
@@ -114,6 +112,7 @@ class AvifImageDecoder(
 				message = AvifDecoder.resultToString(result),
 			)
 		}
+		
 		val firstFrame = if (needsScaling) {
 			firstBitmap.scale(dstWidth, dstHeight).also { firstBitmap.recycle() }
 		} else {
