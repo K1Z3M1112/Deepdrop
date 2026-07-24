@@ -343,9 +343,19 @@ abstract class BasePageHolder<B : ViewBinding>(
 		animatedPlayButton.isVisible = false
 		animatedRequestDisposable?.dispose()
 		val size = withContext(Dispatchers.Default) { AnimatedImageDetector.peekSize(uri) }
+		
+		// ----------------------------------------------------------------------
+		// [ส่วนที่แก้ไข] ป้องกันการยุบตัวของหน้าจอ (Layout Collapse)
+		// ----------------------------------------------------------------------
 		if (size != null && size.first > 0 && size.second > 0) {
 			(itemView as? WebtoonFrameLayout)?.contentAspectRatio = size.first.toFloat() / size.second.toFloat()
+		} else {
+			// Fallback: หากอ่านขนาดล่วงหน้าไม่สำเร็จ ให้ใช้สัดส่วนจำลองไปก่อนเพื่อจองพื้นที่
+			// เช่น 0.75f (สัดส่วน 3:4) หรือ 1.0f (สี่เหลี่ยมจัตุรัส) เพื่อป้องกันความสูงยุบเหลือ 0
+			(itemView as? WebtoonFrameLayout)?.contentAspectRatio = 0.75f 
 		}
+		// ----------------------------------------------------------------------
+
 		ssiv.visibility = View.INVISIBLE
 		animatedImageView.isVisible = true
 		val request = ImageRequest.Builder(context)
