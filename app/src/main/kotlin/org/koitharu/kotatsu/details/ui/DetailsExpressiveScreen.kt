@@ -2,7 +2,6 @@
 
 package org.koitharu.kotatsu.details.ui
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -229,29 +227,20 @@ private fun ExpressiveBackdrop(
 			.mangaSourceExtra(manga?.source)
 			.build()
 	}
+	// blurAmount is kept only so callers/settings don't need to change; the actual GPU blur
+	// layer has been removed (see note above). A no-blur backdrop still reads softened because
+	// of the gradient scrim below, at zero extra compositing cost.
 	Box(
 		modifier = Modifier
 			.fillMaxWidth()
 			.height(480.dp),
 	) {
-		val blurDp = when (blurAmount) {
-			0 -> 0.dp
-			1 -> 20.dp
-			else -> 40.dp
-		}
-		val blurMod = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurDp > 0.dp) {
-			Modifier.blur(blurDp)
-		} else {
-			Modifier
-		}
 		AsyncImage(
 			model = request,
 			imageLoader = imageLoader,
 			contentDescription = null,
 			contentScale = ContentScale.Crop,
-			modifier = Modifier
-				.fillMaxSize()
-				.then(blurMod),
+			modifier = Modifier.fillMaxSize(),
 		)
 		Box(
 			modifier = Modifier

@@ -37,41 +37,79 @@ class AvifImageDecoder(
 			} else {
 				Bitmap.Config.RGB_565
 			}
+			val frameCount = decoder.frameCount
+			if (frameCount > 1 && frameCount <= MAX_ANIMATED_FRAMES) {
+				decodeAnimated(decoder, config, frameCount)
+			} else {
+				decodeStatic(decoder, config)
+			}
+		} finally {
+			decoder.release()
+		}
+	}
+
+	/** Previous, single-frame behaviour: only ever look at the first frame of the AVIF. */
+	private fun decodeStatic(decoder: AvifDecoder, config: Bitmap.Config): DecodeResult {
+		val bitmap = createBitmap(decoder.width, decoder.height, config)
+		val result = decoder.nextFrame(bitmap)
+		if (result != 0) {
+			bitmap.recycle()
+			throw ImageDecodeException(
+				uri = source.fileOrNull()?.toString(),
+				format = "avif",
+				message = AvifDecoder.resultToString(result),
+			)
+		}
+		val (dstWidth, dstHeight) = dstSize(bitmap.width, bitmap.height)
+		return if (dstWidth < bitmap.width || dstHeight < bitmap.height) {
+			val scaled = bitmap.scale(dstWidth, dstHeight)
+			bitmap.recycle()
+			DecodeResult(image = scaled.asImage(), isSampled = true)
+		} else {
+			DecodeResult(image = bitmap.asImage(), isSampled = false)
+		}
+	}
+
+	/** Decodes every frame of an animated AVIF up front and plays them back via [AvifAnimatedDrawable]. */
+	private fun decodeAnimated(decoder: AvifDecoder, config: Bitmap.Config, frameCount: Int): DecodeResult {
+		val (dstWidth, dstHeight) = dstSize(decoder.width, decoder.height)
+		val isSampled = dstWidth < decoder.width || dstHeight < decoder.height
+		val frames = ArrayList<Bitmap>(frameCount)
+		for (i in 0 until frameCount) {
 			val bitmap = createBitmap(decoder.width, decoder.height, config)
 			val result = decoder.nextFrame(bitmap)
 			if (result != 0) {
 				bitmap.recycle()
+				frames.forEach { it.recycle() }
 				throw ImageDecodeException(
 					uri = source.fileOrNull()?.toString(),
 					format = "avif",
 					message = AvifDecoder.resultToString(result),
 				)
 			}
-			// downscaling
-			val (dstWidth, dstHeight) = DecodeUtils.computeDstSize(
-				srcWidth = bitmap.width,
-				srcHeight = bitmap.height,
-				targetSize = options.size,
-				scale = options.scale,
-				maxSize = options.maxBitmapSize,
-			)
-			if (dstWidth < bitmap.width || dstHeight < bitmap.height) {
+			if (isSampled) {
 				val scaled = bitmap.scale(dstWidth, dstHeight)
 				bitmap.recycle()
-				DecodeResult(
-					image = scaled.asImage(),
-					isSampled = true,
-				)
+				frames += scaled
 			} else {
-				DecodeResult(
-					image = bitmap.asImage(),
-					isSampled = false,
-				)
+				frames += bitmap
 			}
-		} finally {
-			decoder.release()
 		}
+		val durationsMs = IntArray(frameCount) { i ->
+			val seconds = decoder.frameDurations.getOrElse(i) { 0.1 }
+			(seconds * 1000).toInt()
+		}
+		val drawable = AvifAnimatedDrawable(frames, durationsMs, decoder.repetitionCount)
+		return DecodeResult(image = drawable.asImage(), isSampled = isSampled)
 	}
+
+	private fun dstSize(srcWidth: Int, srcHeight: Int) = DecodeUtils.computeDstSize(
+		srcWidth = srcWidth,
+		srcHeight = srcHeight,
+		targetSize = options.size,
+		scale = options.scale,
+		maxSize = options.maxBitmapSize,
+	)
 
 	class Factory : Decoder.Factory {
 
@@ -92,5 +130,12 @@ class AvifImageDecoder(
 		private fun isApplicable(result: SourceFetchResult): Boolean {
 			return result.mimeType == "image/avif"
 		}
+	}
+
+	private companion object {
+
+		// All frames of an animated AVIF are decoded up front to keep playback smooth; cap the
+		// frame count so a pathological file can't be used to exhaust memory.
+		const val MAX_ANIMATED_FRAMES = 512
 	}
 }
