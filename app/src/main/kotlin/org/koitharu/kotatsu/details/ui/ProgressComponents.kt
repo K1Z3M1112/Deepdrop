@@ -1,11 +1,6 @@
 package org.koitharu.kotatsu.details.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Row
@@ -23,10 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
@@ -36,8 +28,6 @@ import androidx.compose.ui.unit.dp
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.details.ui.model.HistoryInfo
 import org.koitharu.kotatsu.list.domain.ReadingProgress
-import kotlin.math.PI
-import kotlin.math.sin
 
 @Composable
 internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: Color) {
@@ -101,13 +91,6 @@ internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: 
 
 @Composable
 internal fun WavyProgressBar(progress: Float, color: Color, trackColor: Color, modifier: Modifier) {
-	val transition = rememberInfiniteTransition(label = "wave")
-	val phase by transition.animateFloat(
-		initialValue = 0f,
-		targetValue = (2f * PI).toFloat(),
-		animationSpec = infiniteRepeatable(tween(1300, easing = LinearEasing), RepeatMode.Restart),
-		label = "phase",
-	)
 	val animatedProgress by animateFloatAsState(
 		targetValue = progress.coerceIn(0f, 1f),
 		animationSpec = tween(600),
@@ -117,16 +100,6 @@ internal fun WavyProgressBar(progress: Float, color: Color, trackColor: Color, m
 		val midY = size.height / 2f
 		val stroke = 4.5.dp.toPx()
 		val activeW = size.width * animatedProgress
-		val edgeFlatten = when {
-			animatedProgress <= 0.05f -> animatedProgress / 0.05f
-			animatedProgress >= 0.95f -> (1f - animatedProgress) / 0.05f
-			else -> 1f
-		}
-		val amplitude = (size.height / 2f - stroke / 2f) * 0.9f * edgeFlatten
-		val waveLength = 40.dp.toPx()
-		// The wave must land exactly on the track's centerline at the junction, so its
-		// amplitude fades out over the last quarter wavelength only.
-		val endTaper = waveLength / 4f
 		if (animatedProgress < 1f) {
 			drawLine(
 				color = trackColor,
@@ -137,20 +110,12 @@ internal fun WavyProgressBar(progress: Float, color: Color, trackColor: Color, m
 			)
 		}
 		if (activeW > 0f) {
-			val path = Path().apply {
-				moveTo(0f, midY + amplitude * sin(phase))
-				var x = 0f
-				while (x <= activeW) {
-					val envelope = ((activeW - x) / endTaper).coerceIn(0f, 1f)
-					lineTo(x, midY + amplitude * envelope * sin((x / waveLength) * 2f * PI.toFloat() + phase))
-					x += 3f
-				}
-				lineTo(activeW, midY)
-			}
-			drawPath(
-				path = path,
+			drawLine(
 				color = color,
-				style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round),
+				start = Offset(0f, midY),
+				end = Offset(activeW, midY),
+				strokeWidth = stroke,
+				cap = StrokeCap.Round,
 			)
 		}
 	}
