@@ -111,6 +111,10 @@ abstract class MangaListFragment :
 		paginationListener = PaginationScrollListener(4, this)
 		with(binding.recyclerView) {
 			setHasFixedSize(true)
+			// Plain, cheap list updates: skip the default fade/move animations on every
+			// pagination page and every favourite/progress change. This is the app's most
+			// frequently-updated, image-heavy screen, so this is a real CPU/GPU saving.
+			itemAnimator = null
 			adapter = listAdapter
 			checkNotNull(selectionController).attachToRecyclerView(this)
 			addItemDecoration(TypedListSpacingDecoration(context, false))

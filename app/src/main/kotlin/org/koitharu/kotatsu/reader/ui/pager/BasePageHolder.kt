@@ -4,22 +4,31 @@ import android.content.ComponentCallbacks2
 import android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.drawable.Animatable
+import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.view.View
+import android.widget.ImageView
 import androidx.annotation.CallSuper
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.viewbinding.ViewBinding
+import coil3.request.ImageRequest
+import coil3.request.target
 import com.davemorrissey.labs.subscaleview.DefaultOnImageEventListener
+import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koitharu.kotatsu.BuildConfig
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.exceptions.resolve.ExceptionResolver
+import org.koitharu.kotatsu.core.image.AnimatedImageDetector
 import org.koitharu.kotatsu.core.os.NetworkState
 import org.koitharu.kotatsu.core.ui.list.lifecycle.LifecycleAwareViewHolder
 import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
@@ -53,6 +62,20 @@ abstract class BasePageHolder<B : ViewBinding>(
 	)
 	protected val bindingInfo = LayoutPageInfoBinding.bind(binding.root)
 	protected abstract val ssiv: SubsamplingScaleImageView
+
+	/** Overlay shown instead of [ssiv] for pages whose source has more than one frame (animated
+	 * GIF/WebP/AVIF); [ssiv] only ever renders a single static frame regardless of format. */
+	protected abstract val animatedImageView: ImageView
+
+	/** Small manual trigger shown over the (still static) page once a multi-frame source is
+	 * detected. Playback only starts once the user taps it -- kept manual, rather than starting
+	 * automatically, since automatic playback has proven unreliable across devices. */
+	protected abstract val animatedPlayButton: View
+
+	private val pageLoader = loader
+	private var animatedCheckJob: Job? = null
+	private var animatedRequestDisposable: coil3.request.Disposable? = null
+	private var pendingAnimatedUri: Uri? = null
 
 	protected val settings: ReaderSettings
 		get() = viewModel.settingsProducer.value
@@ -92,6 +115,12 @@ abstract class BasePageHolder<B : ViewBinding>(
 		} else if (viewModel.state.value is PageState.Shown) {
 			onReady()
 		}
+		if (!settings.isPageAnimationsEnabled) {
+			resetAnimatedImage()
+		} else {
+			(viewModel.state.value as? PageState.Loaded)?.let { checkAnimated(it.source) }
+				?: (viewModel.state.value as? PageState.Shown)?.let { checkAnimated(it.source) }
+		}
 		ssiv.applyDownSampling(isResumed())
 		applyUpscale()
 	}
@@ -104,6 +133,7 @@ abstract class BasePageHolder<B : ViewBinding>(
 	fun bind(data: ReaderPage) {
 		if (boundData?.id != data.id) {
 			clearUpscale()
+			resetAnimatedImage()
 		}
 		boundData = data
 		viewModel.onBind(data.toMangaPage())
@@ -118,6 +148,7 @@ abstract class BasePageHolder<B : ViewBinding>(
 		context.registerComponentCallbacks(this)
 		viewModel.state.observe(this, ::onStateChanged)
 		viewModel.settingsProducer.observe(this, ::onConfigChanged)
+		animatedPlayButton.setOnClickListener { playAnimatedImage() }
 	}
 
 	override fun onResume() {
@@ -145,6 +176,7 @@ abstract class BasePageHolder<B : ViewBinding>(
 	@CallSuper
 	open fun onRecycled() {
 		clearUpscale()
+		resetAnimatedImage()
 		viewModel.onRecycle()
 		ssiv.recycle()
 	}
@@ -194,6 +226,7 @@ abstract class BasePageHolder<B : ViewBinding>(
 				bindingInfo.textViewStatus.setText(R.string.preparing_)
 				bindingInfo.textViewStatus.isVisible = true
 				ssiv.setImage(state.source)
+				checkAnimated(state.source)
 			}
 
 			is PageState.Loading -> {
@@ -205,6 +238,15 @@ abstract class BasePageHolder<B : ViewBinding>(
 			}
 
 			is PageState.Shown -> ssiv.post { applyUpscale() }
+
+			is PageState.Animated -> {
+				// SSIV could not decode this source at all (e.g. no AVIF support), so unlike the
+				// checkAnimated() path there is no static frame to fall back to if animations are
+				// off -- show it via animatedImageView regardless, just without auto-starting playback.
+				bindingInfo.textViewStatus.isVisible = false
+				bindingInfo.progressBar.hide()
+				showAnimatedImage(state.source, autoStart = settings.isPageAnimationsEnabled)
+			}
 		}
 	}
 
@@ -236,6 +278,86 @@ abstract class BasePageHolder<B : ViewBinding>(
 		}
 		ssiv.setRenderEffect(null)
 		boundData?.let { UpscaleEffect.setActive(it.id, false) }
+	}
+
+	/** [ssiv] can only ever show a single frame, so a page with more than one frame needs to be
+	 * routed to [animatedImageView] instead, where Coil can drive playback. Detection only offers
+	 * playback via [animatedPlayButton]; it never switches the view over by itself, since starting
+	 * automatically has proven unreliable to actually animate on some devices/formats. */
+	private fun checkAnimated(source: ImageSource) {
+		animatedCheckJob?.cancel()
+		if (!settings.isPageAnimationsEnabled) {
+			resetAnimatedImage()
+			return
+		}
+		val uri = (source as? ImageSource.Uri)?.uri
+		if (uri == null) {
+			resetAnimatedImage()
+			return
+		}
+		animatedCheckJob = lifecycleScope.launch {
+			val isAnimated = withContext(Dispatchers.Default) { AnimatedImageDetector.isAnimated(uri) }
+			if (isAnimated && settings.isPageAnimationsEnabled) {
+				pendingAnimatedUri = uri
+				animatedPlayButton.isVisible = true
+			} else {
+				resetAnimatedImage()
+			}
+		}
+	}
+
+	/** Triggered only by the user tapping [animatedPlayButton]. [ssiv] is still fed the same
+	 * source and kept in the hierarchy (just hidden) so webtoon scroll-range math, which depends
+	 * on its measured size, keeps working unchanged. The drawable's [Animatable.start] is called
+	 * explicitly on success instead of relying purely on Coil's own auto-start/stop handling. */
+	private fun playAnimatedImage() {
+		val uri = pendingAnimatedUri ?: return
+		pendingAnimatedUri = null
+		animatedPlayButton.isVisible = false
+		showAnimatedImage(uri)
+	}
+
+	/** For [PageState.Animated]: [ssiv] never had a frame to show in the first place (its decoder
+	 * rejected the source outright, e.g. no AVIF support), so unlike [playAnimatedImage] there's no
+	 * static preview worth waiting behind a tap -- show it here immediately instead. [autoStart]
+	 * still gates actual playback so the "animations off" setting is respected; when off, this
+	 * source is shown paused on its first frame rather than left blank. */
+	private fun showAnimatedImage(source: ImageSource, autoStart: Boolean = true) {
+		val uri = (source as? ImageSource.Uri)?.uri ?: return
+		showAnimatedImage(uri, autoStart)
+	}
+
+	private fun showAnimatedImage(uri: Uri, autoStart: Boolean = true) {
+		animatedPlayButton.isVisible = false
+		animatedRequestDisposable?.dispose()
+		ssiv.visibility = View.INVISIBLE
+		animatedImageView.isVisible = true
+		val request = ImageRequest.Builder(context)
+			.data(uri)
+			.target(animatedImageView)
+			.listener(
+				onSuccess = { _, _ ->
+					if (autoStart) {
+						(animatedImageView.drawable as? Animatable)?.start()
+					}
+				},
+			)
+			.build()
+		animatedRequestDisposable = pageLoader.imageLoader.enqueue(request)
+	}
+
+	private fun resetAnimatedImage() {
+		animatedCheckJob?.cancel()
+		pendingAnimatedUri = null
+		animatedPlayButton.isVisible = false
+		animatedRequestDisposable?.dispose()
+		animatedRequestDisposable = null
+		if (animatedImageView.isVisible) {
+			(animatedImageView.drawable as? Animatable)?.stop()
+			animatedImageView.setImageDrawable(null)
+			animatedImageView.isVisible = false
+		}
+		ssiv.visibility = View.VISIBLE
 	}
 
 	protected fun SubsamplingScaleImageView.applyDownSampling(isForeground: Boolean) {

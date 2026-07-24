@@ -21,6 +21,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import okio.IOException
 import org.koitharu.kotatsu.core.exceptions.resolve.ExceptionResolver
+import org.koitharu.kotatsu.core.image.AnimatedImageDetector
 import org.koitharu.kotatsu.core.os.NetworkState
 import org.koitharu.kotatsu.core.util.ext.printStackTraceDebug
 import org.koitharu.kotatsu.core.util.ext.throttle
@@ -107,10 +108,22 @@ class PageViewModel(
 		}
 	}
 
+	/** [SubsamplingScaleImageView] failed to decode [uri] (e.g. it can't handle this particular
+	 * AVIF/animated-WebP variant -- Android's [android.graphics.BitmapRegionDecoder] has no AVIF
+	 * support at all), which normally means the fallback below re-encodes it into a static PNG so
+	 * *something* renders. That fallback decodes into a single [android.graphics.Bitmap], which can
+	 * only ever hold one frame -- so for a genuinely multi-frame source it would silently destroy
+	 * every frame but the first, overwriting the cached file in place with no way back.
+	 * Guard against that: if the source is actually animated, route straight to the animated-capable
+	 * view via [PageState.Animated] instead, rather than "fixing" it by deleting its animation. */
 	private fun tryConvert(uri: Uri, e: Exception) {
 		val prevJob = job
 		job = scope.launch(Dispatchers.Default) {
 			prevJob?.join()
+			if (AnimatedImageDetector.isAnimated(uri)) {
+				state.value = PageState.Animated(uri.toImageSource(bounds = null))
+				return@launch
+			}
 			state.value = PageState.Converting()
 			try {
 				val newUri = loader.convertBimap(uri)

@@ -318,6 +318,10 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 	val isReaderUpscaleEnabled: Boolean
 		get() = prefs.getBoolean(KEY_READER_UPSCALE, false)
 
+	var isPageAnimationsEnabled: Boolean
+		get() = prefs.getBoolean(KEY_READER_ANIMATIONS, true)
+		set(value) = prefs.edit { putBoolean(KEY_READER_ANIMATIONS, value) }
+
 	var isChapterJumpDialogEnabled: Boolean
 		get() = prefs.getBoolean(KEY_CHAPTER_JUMP_DIALOG, true)
 		set(value) = prefs.edit { putBoolean(KEY_CHAPTER_JUMP_DIALOG, value) }
@@ -1089,6 +1093,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_SHORTCUTS = "dynamic_shortcuts"
 		const val KEY_READER_OPTIMIZE = "reader_optimize"
 		const val KEY_READER_UPSCALE = "reader_upscale"
+		const val KEY_READER_ANIMATIONS = "reader_animations"
 		const val KEY_LOCAL_LIST_ORDER = "local_order"
 		const val KEY_HISTORY_ORDER = "history_order"
 		const val KEY_FAVORITES_ORDER = "fav_order"

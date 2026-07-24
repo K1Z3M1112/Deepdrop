@@ -126,6 +126,7 @@ private fun ReaderScreen(
 	var enhancedColors by rememberBooleanPref(AppSettings.KEY_32BIT_COLOR, false)
 	var readerOptimize by rememberBooleanPref(AppSettings.KEY_READER_OPTIMIZE, false)
 	var readerUpscale by rememberBooleanPref(AppSettings.KEY_READER_UPSCALE, false)
+	var pageImageAnimations by rememberBooleanPref(AppSettings.KEY_READER_ANIMATIONS, true)
 	var readerCrop by rememberStringSetPref(AppSettings.KEY_READER_CROP, emptySet())
 	var readerFullscreen by rememberBooleanPref(AppSettings.KEY_READER_FULLSCREEN, true)
 	var readerOrientation by rememberStringPref(
@@ -350,6 +351,17 @@ private fun ReaderScreen(
 						onCheckedChange = { enhancedColors = it },
 						icon = R.drawable.ic_images,
 						
+						shape = pos.shape,
+					)
+				}
+				item { pos ->
+					SwitchSettingsItem(
+						title = stringResource(R.string.page_image_animations),
+						subtitle = stringResource(R.string.page_image_animations_summary),
+						checked = pageImageAnimations,
+						onCheckedChange = { pageImageAnimations = it },
+						icon = R.drawable.ic_play,
+
 						shape = pos.shape,
 					)
 				}

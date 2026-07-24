@@ -94,6 +94,12 @@ class PageLoader @Inject constructor(
 
 	val loaderScope = lifecycle.lifecycleScope + InternalErrorHandler() + Dispatchers.Default
 
+	/** Exposed so page holders can load an animated page (GIF/animated WebP/AVIF) into a plain
+	 * ImageView-backed Coil target, bypassing SubsamplingScaleImageView which only ever renders
+	 * a single static frame. */
+	val imageLoader: ImageLoader
+		get() = coil
+
 	private val tasks = LongSparseArray<ProgressDeferred<Uri, Float>>()
 	// Mihon's HTTP reader preloads four pages; allow the same number of in-flight page loads.
 	private val semaphore = Semaphore(4)

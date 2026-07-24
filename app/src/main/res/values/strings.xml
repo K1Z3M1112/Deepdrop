@@ -616,6 +616,9 @@
     <string name="state_paused">Paused</string>
     <string name="reader_upscale">AI upscaling</string>
     <string name="reader_upscale_summary">Sharpen low-resolution pages on the GPU using an Anime4K-based shader. Android 13+</string>
+    <string name="page_image_animations">Animated images</string>
+    <string name="page_image_animations_summary">Play animated GIF, WebP and AVIF pages. Disable to always show a static first frame</string>
+    <string name="play_animation">Play animation</string>
     <string name="upscale_preview">AI upscaling preview</string>
     <string name="upscale_preview_original">Original</string>
     <string name="upscale_preview_ai">Upscaled</string>

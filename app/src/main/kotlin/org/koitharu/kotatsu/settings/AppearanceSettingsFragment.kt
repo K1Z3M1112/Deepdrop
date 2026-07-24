@@ -38,7 +38,6 @@ import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.os.AppShortcutManager
 import org.koitharu.kotatsu.core.prefs.AppProtectionTimeout
 import org.koitharu.kotatsu.core.prefs.AppSettings
-import org.koitharu.kotatsu.core.prefs.ColorScheme
 import org.koitharu.kotatsu.core.prefs.ListMode
 import org.koitharu.kotatsu.core.prefs.ScreenshotsPolicy
 import org.koitharu.kotatsu.core.prefs.SearchSuggestionType
@@ -47,7 +46,6 @@ import org.koitharu.kotatsu.core.util.ext.toList
 import org.koitharu.kotatsu.parsers.util.names
 import org.koitharu.kotatsu.settings.appearance.PreviewSettingsFragment
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
-import org.koitharu.kotatsu.settings.compose.ColorSchemePickerRow
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
 import org.koitharu.kotatsu.settings.compose.ListSettingsItem
 import org.koitharu.kotatsu.settings.compose.MultiSelectSettingsItem
@@ -224,7 +222,6 @@ private fun AppearanceScreen(
 	}
 	val screenshotsPolicyValues = remember { ScreenshotsPolicy.entries.names().toList() }
 	// Bound preferences
-	var colorScheme by rememberStringPref(AppSettings.KEY_COLOR_THEME, ColorScheme.default.name)
 	var theme by rememberStringPref(AppSettings.KEY_THEME, "-1")
 	var amoled by rememberBooleanPref(AppSettings.KEY_THEME_AMOLED, false)
 	var uiScale by rememberIntPref(AppSettings.KEY_UI_SCALE, 100)
@@ -265,17 +262,6 @@ private fun AppearanceScreen(
 	}
 
 	SettingsScaffold {
-		// The color scheme picker is its own inline widget (horizontal cards), rendered
-		// directly here rather than via a SettingsGroup row.
-		item {
-			ColorSchemePickerRow(
-				title = stringResource(R.string.color_theme),
-				selectedValue = colorScheme,
-				onValueChange = { colorScheme = it },
-				shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-			)
-		}
-		item { Spacer(Modifier.height(8.dp).fillMaxWidth()) }
 		item {
 			SettingsGroup(title = "Theme") {
 				item { pos ->

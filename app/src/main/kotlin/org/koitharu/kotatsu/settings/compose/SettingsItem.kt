@@ -3,16 +3,12 @@ package org.koitharu.kotatsu.settings.compose
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,14 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import org.koitharu.kotatsu.core.util.ext.HapticEffect
 import org.koitharu.kotatsu.core.util.ext.rememberHapticEffect
-import org.koitharu.kotatsu.main.ui.nav.rememberAnyDrawablePainter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
@@ -121,19 +115,7 @@ fun SettingsItem(
 				.padding(horizontal = 12.dp, vertical = 10.dp),
 			verticalAlignment = Alignment.CenterVertically,
 		) {
-			if (icon != null) {
-				if (iconColors != null) {
-					SettingsIconBubble(
-						iconRes = icon,
-						colors = iconColors,
-						enabled = enabled,
-						tintIcon = tintIcon,
-					)
-				} else {
-					SettingsIconPlain(iconRes = icon, enabled = enabled, tintOverride = accentColor)
-				}
-				Spacer(Modifier.width(14.dp))
-			}
+			// XP-style flat UI: settings rows are text-only, no leading icon bubble/glyph.
 			Column(modifier = Modifier.weight(1f)) {
 				Text(
 					text = title,
@@ -194,49 +176,6 @@ fun SwitchSettingsItem(
 			Switch(checked = checked, onCheckedChange = onCheckedChangeHaptic, enabled = enabled)
 		},
 	)
-}
-
-@Composable
-private fun SettingsIconBubble(
-	@DrawableRes iconRes: Int,
-	colors: CategoryIconColors,
-	enabled: Boolean,
-	tintIcon: Boolean = true,
-) {
-	val containerAlpha = if (enabled) 1f else 0.4f
-	val contentAlpha = if (enabled) 1f else 0.5f
-	// A multicolor logo (e.g. the Google "G") must not be tinted; show it on a white bubble.
-	val containerColor = if (tintIcon) colors.container.copy(alpha = containerAlpha) else Color.White
-	Box(
-		modifier = Modifier
-			.size(44.dp)
-			.clip(CircleShape)
-			.background(containerColor),
-		contentAlignment = Alignment.Center,
-	) {
-		androidx.compose.foundation.Image(
-			painter = rememberAnyDrawablePainter(iconRes),
-			contentDescription = null,
-			modifier = Modifier.size(if (tintIcon) 22.dp else 24.dp),
-			colorFilter = if (tintIcon) ColorFilter.tint(colors.onContainer.copy(alpha = contentAlpha)) else null,
-		)
-	}
-}
-
-@Composable
-private fun SettingsIconPlain(@DrawableRes iconRes: Int, enabled: Boolean, tintOverride: Color? = null) {
-	val tint = (tintOverride ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = if (enabled) 1f else 0.4f)
-	Box(
-		modifier = Modifier.size(44.dp),
-		contentAlignment = Alignment.Center,
-	) {
-		androidx.compose.foundation.Image(
-			painter = rememberAnyDrawablePainter(iconRes),
-			contentDescription = null,
-			modifier = Modifier.size(24.dp),
-			colorFilter = ColorFilter.tint(tint),
-		)
-	}
 }
 
 @Composable

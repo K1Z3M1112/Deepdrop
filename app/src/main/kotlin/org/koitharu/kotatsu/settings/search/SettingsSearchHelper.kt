@@ -12,12 +12,9 @@ import org.koitharu.kotatsu.settings.BackupSettingsFragment
 import org.koitharu.kotatsu.settings.DownloadsSettingsFragment
 import org.koitharu.kotatsu.settings.ProxySettingsFragment
 import org.koitharu.kotatsu.settings.ReaderSettingsFragment
-import org.koitharu.kotatsu.settings.ServicesSettingsFragment
 import org.koitharu.kotatsu.settings.StorageAndNetworkSettingsFragment
-import org.koitharu.kotatsu.settings.SuggestionsSettingsFragment
 import org.koitharu.kotatsu.settings.NotificationSettingsLegacyFragment
 import org.koitharu.kotatsu.settings.appearance.PreviewSettingsFragment
-import org.koitharu.kotatsu.settings.discord.DiscordSettingsFragment
 import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
 import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
 import org.koitharu.kotatsu.settings.userdata.storage.DataCleanupSettingsFragment
@@ -157,6 +154,7 @@ class SettingsSearchHelper @Inject constructor(
 				addItem(AppSettings.KEY_32BIT_COLOR, R.string.enhanced_colors, R.string.enhanced_colors_summary, crumbs, ReaderSettingsFragment::class.java)
 				addItem(AppSettings.KEY_READER_OPTIMIZE, R.string.reader_optimize, R.string.reader_optimize_summary, crumbs, ReaderSettingsFragment::class.java)
 				addItem(AppSettings.KEY_READER_UPSCALE, R.string.reader_upscale, R.string.reader_upscale_summary, crumbs, ReaderSettingsFragment::class.java)
+				addItem(AppSettings.KEY_READER_ANIMATIONS, R.string.page_image_animations, R.string.page_image_animations_summary, crumbs, ReaderSettingsFragment::class.java)
 				addItem(AppSettings.KEY_READER_CROP, R.string.crop_pages, breadcrumbs = crumbs, fragmentClass = ReaderSettingsFragment::class.java, keywordArrayRes = intArrayOf(R.array.reader_crop))
 			}
 			group(sectionCrumbs, "Display") { crumbs ->
@@ -256,31 +254,6 @@ class SettingsSearchHelper @Inject constructor(
 				addItem("tracker_debug", R.string.tracker_debug_info, R.string.tracker_debug_info_summary, crumbs, TrackerSettingsFragment::class.java)
 				addItem("ignore_dose", R.string.disable_battery_optimization, R.string.disable_battery_optimization_summary, crumbs, TrackerSettingsFragment::class.java)
 				addItem("track_warning", R.string.tracker_warning, breadcrumbs = crumbs, fragmentClass = TrackerSettingsFragment::class.java)
-			}
-		}
-
-		section(R.string.services, ServicesSettingsFragment::class.java) { sectionCrumbs ->
-			group(sectionCrumbs, "General") { crumbs ->
-				addItem("suggestions_screen", R.string.suggestions, breadcrumbs = crumbs, fragmentClass = SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_SUGGESTIONS, R.string.suggestions_enable, breadcrumbs = crumbs + ctx.getString(R.string.suggestions), fragmentClass = SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_SUGGESTIONS_WIFI_ONLY, R.string.only_using_wifi, R.string.suggestions_wifi_only_summary, crumbs + ctx.getString(R.string.suggestions), SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_SUGGESTIONS_NOTIFICATIONS, R.string.notifications_enable, R.string.suggestions_notifications_summary, crumbs + ctx.getString(R.string.suggestions), SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_SUGGESTIONS_EXCLUDE_TAGS, R.string.suggestions_excluded_genres, R.string.suggestions_excluded_genres_summary, crumbs + ctx.getString(R.string.suggestions), SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_SUGGESTIONS_EXCLUDE_NSFW, R.string.exclude_nsfw_from_suggestions, R.string.exclude_nsfw_from_suggestions_summary, crumbs + ctx.getString(R.string.suggestions), SuggestionsSettingsFragment::class.java)
-				addItem(AppSettings.KEY_RELATED_MANGA, R.string.related_manga, R.string.related_manga_summary, crumbs, ServicesSettingsFragment::class.java)
-				addItem(AppSettings.KEY_STATS_ENABLED, R.string.reading_stats, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
-				addItem(AppSettings.KEY_READING_TIME, R.string.reading_time_estimation, R.string.reading_time_estimation_summary, crumbs, ServicesSettingsFragment::class.java)
-			}
-			group(sectionCrumbs, ctx.getString(R.string.tracking)) { crumbs ->
-				addItem("anilist", R.string.anilist, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
-				addItem("kitsu", R.string.kitsu, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
-				addItem("mal", R.string.mal, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
-				addItem("shikimori", R.string.shikimori, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
-			}
-			group(sectionCrumbs, "External") { crumbs ->
-				addItem("discord_rpc", R.string.discord_rpc, R.string.discord_rpc_summary, crumbs, DiscordSettingsFragment::class.java)
-				addItem("discord_token", R.string.discord_token, breadcrumbs = crumbs + ctx.getString(R.string.discord), fragmentClass = DiscordSettingsFragment::class.java, keywordText = listOf("token", "sign in", "browser"))
-				addItem("discord_skip_nsfw", R.string.disable_nsfw, R.string.rpc_skip_nsfw_summary, crumbs + ctx.getString(R.string.discord), DiscordSettingsFragment::class.java)
 			}
 		}
 

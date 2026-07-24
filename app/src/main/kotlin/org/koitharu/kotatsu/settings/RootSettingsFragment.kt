@@ -142,11 +142,6 @@ enum class SettingsSection(
 		intArrayOf(R.string.track_sources, R.string.notifications_settings),
 		TrackerSettingsFragment::class.java,
 	),
-	SERVICES(
-		R.string.services, R.drawable.ic_services, "services",
-		intArrayOf(R.string.suggestions, R.string.tracking),
-		ServicesSettingsFragment::class.java,
-	),
 }
 
 @Composable

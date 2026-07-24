@@ -1,8 +1,5 @@
 package org.koitharu.kotatsu.main.ui.nav
 
-import android.content.res.ColorStateList
-import android.graphics.PorterDuff
-import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.compose.animation.AnimatedVisibility
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -55,7 +51,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.util.ext.HapticEffect
 import org.koitharu.kotatsu.core.util.ext.rememberHapticEffect
@@ -265,6 +260,8 @@ private fun FloatingNavItem(
 			verticalAlignment = Alignment.CenterVertically,
 			horizontalArrangement = Arrangement.Center,
 		) {
+			// XP-style flat UI: no icon glyph and no expand/fade animation — the tab is a plain,
+			// always-visible text label (with a badge overlay when there's a count to show).
 			BadgedBox(
 				badge = {
 					if (item.badgeCount > 0) {
@@ -274,95 +271,14 @@ private fun FloatingNavItem(
 					}
 				},
 			) {
-				// Use a real ImageView so the AnimatedStateListDrawable's enter/leave morphs
-				// (avd_*_enter / avd_*_leave) actually tick. Painting an AVD onto Compose's
-				// canvas via a custom Painter doesn't reliably drive the platform animator —
-				// ImageView does, because it's the same path the native BottomNavigationView uses.
-				NavIcon(
-					resId = item.icon,
-					selected = selected,
-					tint = content,
-					modifier = Modifier.size(24.dp),
-				)
-			}
-			AnimatedVisibility(
-				visible = selected && showLabel,
-				enter = expandHorizontally(
-					animationSpec = FloatSpec_Size,
-					expandFrom = Alignment.Start,
-				) + fadeIn(animationSpec = FloatSpec_Float),
-				exit = shrinkHorizontally(
-					animationSpec = FloatSpec_Size,
-					shrinkTowards = Alignment.Start,
-				) + fadeOut(animationSpec = FloatSpec_Float),
-			) {
 				Text(
 					text = title,
 					color = content,
 					fontSize = 14.sp,
 					lineHeight = 20.sp,
 					maxLines = 1,
-					modifier = Modifier.padding(start = 8.dp),
 				)
 			}
 		}
 	}
-}
-
-private val SELECTOR_STATE_CHECKED = intArrayOf(android.R.attr.state_checked)
-private val SELECTOR_STATE_UNCHECKED = intArrayOf(-android.R.attr.state_checked)
-
-/**
- * Renders a selector drawable (state-list with `<animated-selector>` transitions) inside
- * Compose by hosting a real [ImageView]. We use ImageView rather than a custom [Painter]
- * because `AnimatedVectorDrawable`'s animator pipeline doesn't reliably tick when painted
- * onto Compose's generic canvas — wrapping in a View matches the path the platform
- * `BottomNavigationView` uses, where these morphs are known to work.
- *
- * The [selected] flag drives the drawable state via [ImageView.setImageState], which is
- * what triggers the `<transition>` AVD between the normal and checked items.
- */
-@Composable
-private fun NavIcon(
-	@DrawableRes resId: Int,
-	selected: Boolean,
-	tint: Color,
-	modifier: Modifier = Modifier,
-) {
-	AndroidView(
-		modifier = modifier,
-		factory = { ctx ->
-			ImageView(ctx).apply {
-				scaleType = ImageView.ScaleType.FIT_CENTER
-				setImageResource(resId)
-				// Prime initial state without a transition. Setting state twice (empty,
-				// then the real state) suppresses the first-paint morph that would
-				// otherwise fire on inflate.
-				setImageState(IntArray(0), false)
-				jumpDrawablesToCurrentState()
-			}
-		},
-		update = { iv ->
-			val targetResId = when {
-				resId == R.drawable.ic_explore_selector && selected -> R.drawable.ic_explore_checked
-				resId == R.drawable.ic_explore_selector -> R.drawable.ic_explore_normal
-				else -> resId
-			}
-			val resourceChanged = iv.tag != targetResId
-			if (resourceChanged) {
-				iv.setImageResource(targetResId)
-				iv.tag = targetResId
-			}
-			val targetState = if (selected) SELECTOR_STATE_CHECKED else SELECTOR_STATE_UNCHECKED
-			if (resourceChanged || iv.isSelected != selected) {
-				iv.isSelected = selected
-				iv.isActivated = selected
-				iv.setImageState(targetState, false)
-			}
-			val tintColor = tint.toArgb()
-			iv.imageTintList = ColorStateList.valueOf(tintColor)
-			iv.drawable?.mutate()?.setTint(tintColor)
-			iv.setColorFilter(tintColor, PorterDuff.Mode.SRC_IN)
-		},
-	)
 }

@@ -39,6 +39,7 @@ data class ReaderSettings(
 	val isPagesNumbersEnabled: Boolean,
 	val isPagesCropEnabledStandard: Boolean,
 	val isPagesCropEnabledWebtoon: Boolean,
+	val isPageAnimationsEnabled: Boolean,
 ) {
 
 	private constructor(settings: AppSettings, colorFilterOverride: ReaderColorFilter?) : this(
@@ -55,6 +56,7 @@ data class ReaderSettings(
 		isPagesNumbersEnabled = settings.isPagesNumbersEnabled,
 		isPagesCropEnabledStandard = settings.isPagesCropEnabled(ReaderMode.STANDARD),
 		isPagesCropEnabledWebtoon = settings.isPagesCropEnabled(ReaderMode.WEBTOON),
+		isPageAnimationsEnabled = settings.isPageAnimationsEnabled,
 	)
 
 	fun applyBackground(view: View) {
@@ -106,6 +108,7 @@ data class ReaderSettings(
 			AppSettings.KEY_CF_INVERTED,
 			AppSettings.KEY_CF_GRAYSCALE,
 			AppSettings.KEY_READER_CROP,
+			AppSettings.KEY_READER_ANIMATIONS,
 		)
 		private var job: Job? = null
 

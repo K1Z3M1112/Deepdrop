@@ -24,6 +24,10 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.RecyclerView
+import android.view.ViewGroup
 import androidx.viewbinding.ViewBinding
 import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.roundToInt
@@ -88,6 +92,34 @@ abstract class BaseActivity<B : ViewBinding> :
 		maybePlayRecreateFadeIn()
 		settings.subscribe(statusBarPrefListener)
 		applyStatusBarVisibility(settings.isStatusBarHidden)
+		// XP-style flat UI, app-wide: every RecyclerView (in this activity and in any fragment,
+		// including nested child fragments) gets its item animator switched off as soon as its
+		// view is created, so list updates/scrolling never trigger fade/move animations or the
+		// extra GPU compositing that comes with them.
+		supportFragmentManager.registerFragmentLifecycleCallbacks(
+			object : FragmentManager.FragmentLifecycleCallbacks() {
+				override fun onFragmentViewCreated(
+					fm: FragmentManager,
+					f: Fragment,
+					v: View,
+					savedInstanceState: Bundle?,
+				) {
+					disableRecyclerViewAnimations(v)
+				}
+			},
+			true,
+		)
+	}
+
+	private fun disableRecyclerViewAnimations(view: View) {
+		if (view is RecyclerView) {
+			view.itemAnimator = null
+		}
+		if (view is ViewGroup) {
+			for (i in 0 until view.childCount) {
+				disableRecyclerViewAnimations(view.getChildAt(i))
+			}
+		}
 	}
 
 	override fun onDestroy() {
@@ -119,21 +151,14 @@ abstract class BaseActivity<B : ViewBinding> :
 
 	/**
 	 * When this activity is being recreated in place by a theme/colour-scheme change there is no
-	 * enter transition, so the freshly-inflated toolbar visibly settles (the back button and title
-	 * reflow into place). Fade the whole window in briefly to mask that one-off jank. Normal
-	 * navigation and configuration changes (rotation) don't set the flag, so they're unaffected.
+	 * enter transition. XP-style flat UI: show the recreated window instantly instead of fading
+	 * it in, so there's no animation and no extra compositing pass.
 	 */
 	private fun maybePlayRecreateFadeIn() {
 		if (!ActivityRecreationHandle.isAnimatedRecreateInProgress) {
 			return
 		}
-		val decor = window.decorView
-		decor.alpha = 0f
-		decor.animate()
-			.alpha(1f)
-			.setDuration(RECREATE_FADE_DURATION_MS)
-			.withEndAction { decor.alpha = 1f }
-			.start()
+		window.decorView.alpha = 1f
 	}
 
 	override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -155,6 +180,7 @@ abstract class BaseActivity<B : ViewBinding> :
 	protected fun setContentView(binding: B) {
 		this.viewBinding = binding
 		super.setContentView(binding.root)
+		disableRecyclerViewAnimations(binding.root)
 		ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 			val modifiedInsets = if (entryPoint.settings.isStatusBarHidden) {
 				val statusBarInsets = insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars())
@@ -289,11 +315,6 @@ abstract class BaseActivity<B : ViewBinding> :
 	}
 
 	protected fun hasViewBinding() = ::viewBinding.isInitialized
-
-	private companion object {
-
-		private const val RECREATE_FADE_DURATION_MS = 220L
-	}
 }
 
 /**

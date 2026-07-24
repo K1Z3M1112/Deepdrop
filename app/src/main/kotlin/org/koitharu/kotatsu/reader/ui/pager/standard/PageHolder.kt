@@ -46,6 +46,8 @@ open class PageHolder(
 ), ZoomControl.ZoomControlListener, OnApplyWindowInsetsListener {
 
 	override val ssiv = binding.ssiv
+	override val animatedImageView = binding.animatedImage
+	override val animatedPlayButton = binding.buttonPlayAnimation
 
 	init {
 		ViewCompat.setOnApplyWindowInsetsListener(binding.root, this)

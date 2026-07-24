@@ -83,7 +83,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dropsauce-apk-${{ github.event.inputs.build_type || 'debug' }}
+          name: deepdrop-apk-${{ github.event.inputs.build_type || 'debug' }}
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
 

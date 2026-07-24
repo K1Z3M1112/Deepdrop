@@ -4,8 +4,10 @@
 	<!-- Base application theme. -->
 	<style name="Base.Theme.Kotatsu" parent="Theme.Material3.DayNight.NoActionBar">
 
-		<!-- Enable activity/shared-element transitions (manga cover float to details) -->
-		<item name="android:windowActivityTransitions">true</item>
+		<!-- XP-style flat UI: window switches are instant, no shared-element float/fade and no
+		     window animation, so there's nothing for the GPU to composite during navigation. -->
+		<item name="android:windowActivityTransitions">false</item>
+		<item name="android:windowAnimationStyle">@null</item>
 
 		<!-- Theme Colors -->
 		<item name="colorPrimary">@color/kotatsu_primary</item>

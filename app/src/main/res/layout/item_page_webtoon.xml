@@ -2,6 +2,7 @@
 <org.koitharu.kotatsu.reader.ui.pager.webtoon.WebtoonFrameLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
 	android:defaultFocusHighlightEnabled="false">
@@ -15,6 +16,32 @@
 		app:panEnabled="false"
 		app:quickScaleEnabled="false"
 		app:zoomEnabled="false" />
+
+	<ImageView
+		android:id="@+id/animated_image"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:clickable="true"
+		android:contentDescription="@null"
+		android:focusable="true"
+		android:scaleType="fitCenter"
+		android:visibility="gone"
+		tools:ignore="ClickableViewAccessibility" />
+
+	<ImageButton
+		android:id="@+id/button_play_animation"
+		android:layout_width="36dp"
+		android:layout_height="36dp"
+		android:layout_gravity="end|bottom"
+		android:layout_margin="@dimen/margin_small"
+		android:background="@drawable/bg_circle_button"
+		android:contentDescription="@string/play_animation"
+		android:elevation="@dimen/m3_sys_elevation_level1"
+		android:scaleType="center"
+		android:tooltipText="@string/play_animation"
+		android:visibility="gone"
+		app:srcCompat="@drawable/ic_play"
+		tools:visibility="visible" />
 
 	<include layout="@layout/layout_page_info" />
 
